@@ -1,0 +1,9 @@
+# Environment variables / API Keys
+.env
+
+# Dependencies
+node_modules/
+
+# OS / Build files
+.DS_Store
+dist/

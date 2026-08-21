@@ -1,0 +1,10 @@
+[
+  {
+    "id": "empathy_and_rapport",
+    "description": "Dimension ID: \"empathy_and_rapport\"\nDescription: Did the coach greet the client warmly and establish rapport before diving into technical details?\nMax Score: 5"
+  },
+  {
+    "id": "active_listening",
+    "description": "Dimension ID: \"active_listening\"\nDescription: Did the coach validate the client's emotions and reflect back their experience?\nMax Score: 5"
+  }
+]

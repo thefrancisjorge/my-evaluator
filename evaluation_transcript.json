@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-08-21T19:02:55.843Z",
+  "transcriptFile": "transcript.txt",
+  "metrics": {
+    "rawTotalPoints": 10,
+    "maxPossiblePoints": 10,
+    "finalPercentageScore": 100
+  },
+  "evaluations": [
+    {
+      "dimensionId": "empathy_and_rapport",
+      "score": 5,
+      "reasoning": "The coach greeted the client warmly and checked in on how they were feeling before diving into metrics. Furthermore, when the client mentioned feeling overwhelmed earlier, the coach validated their feelings, appreciated their transparency, and showed strong empathy.",
+      "evidence": [
+        {
+          "quote": "Welcome to our call today! How are you feeling?",
+          "lineStart": 1
+        },
+        {
+          "quote": "That makes total sense. I appreciate you sharing that—it takes real courage to acknowledge when things feel heavy. Let's make sure our plan today lightens that load.",
+          "lineStart": 5
+        }
+      ],
+      "quickFix": "Continue maintaining this high standard of empathetic check-ins and active listening in future sessions.",
+      "notEvidenced": false
+    },
+    {
+      "dimensionId": "active_listening",
+      "score": 5,
+      "reasoning": "The coach demonstrated active listening by directly validating the client's admission of feeling overwhelmed and reflecting back empathy, encouraging open communication and reassuring them.",
+      "evidence": [
+        {
+          "quote": "That makes total sense. I appreciate you sharing that—it takes real courage to acknowledge when things feel heavy. Let's make sure our plan today lightens that load.",
+          "lineStart": 5
+        }
+      ],
+      "quickFix": "Continue validating feelings promptly before transitioning into structured plan creation.",
+      "notEvidenced": false
+    }
+  ]
+}
