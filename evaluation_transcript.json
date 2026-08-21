@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-21T19:02:55.843Z",
+  "timestamp": "2026-08-21T19:12:14.283Z",
   "transcriptFile": "transcript.txt",
   "metrics": {
     "rawTotalPoints": 10,
@@ -10,7 +10,7 @@
     {
       "dimensionId": "empathy_and_rapport",
       "score": 5,
-      "reasoning": "The coach greeted the client warmly and checked in on how they were feeling before diving into metrics. Furthermore, when the client mentioned feeling overwhelmed earlier, the coach validated their feelings, appreciated their transparency, and showed strong empathy.",
+      "reasoning": "The coach greeted the client warmly at the start of the call and asked about their well-being before discussing goals. Additionally, the coach demonstrated strong empathy when the client expressed feeling overwhelmed by validating their emotions and offering support.",
       "evidence": [
         {
           "quote": "Welcome to our call today! How are you feeling?",
@@ -21,20 +21,20 @@
           "lineStart": 5
         }
       ],
-      "quickFix": "Continue maintaining this high standard of empathetic check-ins and active listening in future sessions.",
+      "quickFix": "Continue maintaining this strong balance of warm greetings, personal check-ins, and emotional validation throughout calls.",
       "notEvidenced": false
     },
     {
       "dimensionId": "active_listening",
       "score": 5,
-      "reasoning": "The coach demonstrated active listening by directly validating the client's admission of feeling overwhelmed and reflecting back empathy, encouraging open communication and reassuring them.",
+      "reasoning": "The coach effectively validated the client's feelings of being overwhelmed, acknowledged their courage in sharing, and aligned the session plan to support their emotional state.",
       "evidence": [
         {
           "quote": "That makes total sense. I appreciate you sharing that—it takes real courage to acknowledge when things feel heavy. Let's make sure our plan today lightens that load.",
           "lineStart": 5
         }
       ],
-      "quickFix": "Continue validating feelings promptly before transitioning into structured plan creation.",
+      "quickFix": "Continue validating feelings and reflecting experience before transitioning into structured goal setting.",
       "notEvidenced": false
     }
   ]
