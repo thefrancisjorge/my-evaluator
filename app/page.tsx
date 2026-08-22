@@ -140,7 +140,24 @@ export default function HomePage() {
         ) : (
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {history.map((item) => (
-              <li key={item.id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #eaeaea', borderRadius: '6px', backgroundColor: '#fafafa' }}>
+              <li 
+                key={item.id} 
+                onClick={() => {
+                  setResult(item.report);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ 
+                  marginBottom: '1rem', 
+                  padding: '1rem', 
+                  border: '1px solid #eaeaea', 
+                  borderRadius: '6px', 
+                  backgroundColor: '#fafafa',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <strong>{item.call_type}</strong>
                   <small style={{ color: '#888' }}>{new Date(item.created_at).toLocaleString()}</small>
