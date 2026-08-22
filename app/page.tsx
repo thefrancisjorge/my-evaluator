@@ -762,3 +762,4 @@ const lightThemeCSS = `
     grid-template-columns: 1fr;
   }
 }
+`;
