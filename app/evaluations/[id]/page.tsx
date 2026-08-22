@@ -120,16 +120,16 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   };
 
   if (state === 'loading') {
-    return <Shell><div className="h-6 w-40 bg-stone-100 animate-pulse rounded" /><div className="mt-6 h-32 w-full bg-stone-50 animate-pulse rounded-xl" /></Shell>;
+    return <Shell><div className="h-6 w-40 bg-zinc-100 animate-pulse rounded" /><div className="mt-8 h-32 w-full bg-zinc-50 animate-pulse rounded-2xl" /></Shell>;
   }
 
   if (state === 'missing') {
     return (
       <Shell>
-        <div className="max-w-md mx-auto text-center py-20">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">This run doesn&apos;t exist</h1>
-          <p className="mt-2 text-stone-500 text-sm">The link points to an ID that was never created, or the run was deleted.</p>
-          <Link href="/" className="mt-6 inline-flex items-center justify-center bg-stone-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg shadow-sm hover:bg-stone-800 transition-colors">Evaluate a call</Link>
+        <div className="max-w-md mx-auto text-center py-24">
+          <h1 className="text-xl font-medium tracking-tight text-zinc-900">This run doesn&apos;t exist</h1>
+          <p className="mt-2 text-zinc-500 text-sm leading-relaxed">The link points to an ID that was never created or has been removed.</p>
+          <Link href="/" className="mt-8 inline-flex items-center justify-center bg-zinc-900 text-white text-xs font-medium tracking-wide px-5 py-2.5 rounded-full shadow-sm hover:bg-zinc-800 transition-all">Evaluate a call</Link>
         </div>
       </Shell>
     );
@@ -138,16 +138,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   if (state === 'running') {
     return (
       <Shell>
-        <div className="max-w-md mx-auto text-center py-20">
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-amber-50 border border-amber-200/60 mb-4">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-            <span className="text-xs font-medium text-amber-800 uppercase tracking-wider">Scoring in progress</span>
+        <div className="max-w-md mx-auto text-center py-24">
+          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-100 border border-zinc-200/60 mb-6">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-[11px] font-medium text-zinc-700 tracking-wider uppercase">Scoring in progress</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Evaluating transcript...</h1>
-          <p className="mt-2 text-stone-500 text-sm leading-relaxed">
-            This page refreshes automatically. You can safely leave or close this tab—the run will complete in the background.
-          </p>
-          <div className="mt-6 font-mono text-xs text-stone-400 bg-stone-50 py-1.5 px-3 rounded-md inline-block">Run ID: {id.slice(0, 8)}</div>
+          <h1 className="text-xl font-medium tracking-tight text-zinc-900">Analyzing session transcript...</h1>
+          <p className="mt-2 text-zinc-500 text-sm leading-relaxed">This page updates automatically in the background.</p>
         </div>
       </Shell>
     );
@@ -156,43 +153,40 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   if (state === 'failed' || !result) {
     return (
       <Shell>
-        <div className="max-w-xl mx-auto py-12">
-          <div className="p-6 bg-red-50 border border-red-200 rounded-xl">
-            <h1 className="text-lg font-semibold text-red-900">This run failed</h1>
-            <pre className="mt-3 p-4 bg-white/80 border border-red-100 rounded-lg text-xs font-mono text-red-800 whitespace-pre-wrap overflow-x-auto">
-              {row?.error || 'No specific error reason was recorded.'}
+        <div className="max-w-xl mx-auto py-16">
+          <div className="p-6 bg-red-50/50 border border-red-200/60 rounded-2xl">
+            <h1 className="text-sm font-semibold text-red-900">Evaluation failed</h1>
+            <pre className="mt-3 p-4 bg-white border border-red-100 rounded-xl text-xs font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+              {row?.error || 'No specific error recorded.'}
             </pre>
-          </div>
-          <div className="mt-6 text-center">
-            <Link href="/" className="inline-flex items-center justify-center bg-stone-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg shadow-sm hover:bg-stone-800 transition-colors">Try another transcript</Link>
           </div>
         </div>
       </Shell>
     );
   }
 
-  const bandColor = BAND_HEX[result.band] ?? '#57534E';
+  const bandColor = BAND_HEX[result.band] ?? '#52525B';
   const fabricated = result.evidence_check.total - result.evidence_check.verified;
 
   return (
-    <main className="min-h-screen bg-stone-50/50 text-stone-900 pb-28">
-      {/* Top Sticky Navigation Bar */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-stone-200/80">
+    <main className="min-h-screen bg-[#FBFBFD] text-zinc-900 pb-32 selection:bg-zinc-900 selection:text-white">
+      {/* Apple-style Glass Navigation */}
+      <div className="sticky top-0 z-30 bg-[#FBFBFD]/80 backdrop-blur-xl border-b border-zinc-200/60">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-sm font-medium text-stone-500 hover:text-stone-900 flex items-center gap-1.5 transition-colors">
-            <span>←</span> All runs
+          <Link href="/" className="text-xs font-medium text-zinc-500 hover:text-zinc-900 flex items-center gap-1.5 transition-colors">
+            <span>←</span> Back to runs
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button 
               onClick={downloadPDF} 
               disabled={pdfBusy} 
-              className="inline-flex items-center gap-1.5 text-xs font-medium bg-stone-900 text-white px-3.5 py-1.5 rounded-lg shadow-sm hover:bg-stone-800 disabled:opacity-55 transition-all"
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-zinc-900 text-white px-3.5 py-1.5 rounded-full shadow-sm hover:bg-zinc-800 disabled:opacity-50 transition-all"
             >
-              {pdfBusy ? 'Generating PDF...' : 'Download PDF'}
+              {pdfBusy ? 'Exporting PDF...' : 'Download PDF'}
             </button>
             <button 
-              onClick={() => { navigator.clipboard.writeText(window.location.href); setToast('Link copied to clipboard'); }} 
-              className="text-xs font-medium text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/70 px-3 py-1.5 rounded-lg transition-colors"
+              onClick={() => { navigator.clipboard.writeText(window.location.href); setToast('Link copied'); }} 
+              className="text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100/80 hover:bg-zinc-200/70 px-3 py-1.5 rounded-full transition-colors"
             >
               Share
             </button>
@@ -200,95 +194,92 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 pt-10 space-y-8">
+      <div className="max-w-4xl mx-auto px-6 pt-12 space-y-8">
         
-        {/* Score Card Header */}
-        <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-stone-50 to-stone-100/50 rounded-bl-full pointer-events-none -z-0" />
-          <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div>
-                <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.18em] px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 mb-3">
-                  {spec?.label}
-                </span>
-                <h1 className="text-3xl font-bold tracking-tight text-stone-900">{client || 'Untitled Client Session'}</h1>
-                <p className="text-sm text-stone-500 mt-1">
-                  {[coach ? `Coach: ${coach}` : null, program ? `Program: ${program}` : null].filter(Boolean).join(' · ') || 'No metadata assigned yet'}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 bg-stone-50/80 border border-stone-200/60 p-4 rounded-xl shrink-0">
-                <div className="text-4xl font-extrabold tracking-tight tabular-nums" style={{ color: bandColor }}>
-                  {Math.round(result.percentage)}%
-                </div>
-                <div className="border-l border-stone-200 pl-4">
-                  <div className="text-xs font-bold uppercase tracking-wider" style={{ color: bandColor }}>{result.band}</div>
-                  <div className="text-xs text-stone-500 font-mono mt-0.5">{result.raw_score} / {result.max_possible} points</div>
-                </div>
-              </div>
+        {/* Main Score Hero Card */}
+        <div className="bg-white rounded-3xl border border-zinc-200/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-8 md:p-10 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="space-y-2">
+              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-zinc-100 text-zinc-600">
+                {spec?.label}
+              </span>
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-900">{client || 'Untitled Client Session'}</h1>
+              <p className="text-sm text-zinc-500">
+                {[coach ? `Coach: ${coach}` : null, program ? `Program: ${program}` : null].filter(Boolean).join(' · ') || 'No metadata assigned yet'}
+              </p>
             </div>
 
-            <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden mt-6">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${result.percentage}%`, background: bandColor }} />
+            <div className="flex items-center gap-5 bg-zinc-50/80 border border-zinc-200/60 px-6 py-4 rounded-2xl shrink-0">
+              <div className="text-4xl font-bold tracking-tight tabular-nums" style={{ color: bandColor }}>
+                {Math.round(result.percentage)}%
+              </div>
+              <div className="border-l border-zinc-200 pl-5">
+                <div className="text-xs font-bold uppercase tracking-wider" style={{ color: bandColor }}>{result.band}</div>
+                <div className="text-[11px] text-zinc-400 font-mono mt-0.5">{result.raw_score} / {result.max_possible} pts</div>
+              </div>
             </div>
-            
-            <p className="mt-4 text-sm text-stone-600 leading-relaxed max-w-2xl">{result.band_blurb}</p>
           </div>
+
+          <div className="w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden mt-8">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${result.percentage}%`, background: bandColor }} />
+          </div>
+          
+          <p className="mt-6 text-sm text-zinc-600 leading-relaxed max-w-2xl font-normal">{result.band_blurb}</p>
         </div>
 
-        {/* Metadata Editor Bar */}
-        <div className="bg-white rounded-xl border border-stone-200/80 shadow-sm p-5">
+        {/* Metadata Controls */}
+        <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] p-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <Field label="Coach" value={coach} onChange={setCoach} />
             <Field label="Client" value={client} onChange={setClient} />
             <Field label="Program" value={program} onChange={setProgram} />
           </div>
-          <div className="flex items-center justify-between pt-3 border-t border-stone-100">
-            <div className="flex items-center gap-2 text-xs text-stone-500">
-              <span className={`w-2 h-2 rounded-full ${fabricated === 0 ? 'bg-emerald-500' : 'bg-red-500'}`} />
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <span className={`w-2 h-2 rounded-full ${fabricated === 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               <span>{result.evidence_check.verified} of {result.evidence_check.total} quoted lines verified verbatim</span>
             </div>
             <button 
               onClick={saveFields} 
               disabled={saving} 
-              className="text-xs font-medium bg-stone-900 text-white px-4 py-1.5 rounded-lg hover:bg-stone-800 disabled:opacity-50 transition-colors shadow-sm"
+              className="text-xs font-medium bg-zinc-900 text-white px-4 py-1.5 rounded-full hover:bg-zinc-800 disabled:opacity-50 transition-colors shadow-sm"
             >
               {saving ? 'Saving...' : 'Save details'}
             </button>
           </div>
         </div>
 
-        {/* The One Thing & Caps */}
+        {/* High-Impact Pivot & Flags */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white rounded-2xl border border-stone-200/80 shadow-sm p-6 flex flex-col justify-between">
+          <div className="md:col-span-2 bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] p-6 md:p-8 flex flex-col justify-between">
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400 block mb-2">The High-Impact Pivot</span>
-              <h2 className="text-lg font-semibold text-stone-900 leading-snug">{result.the_one_thing.change}</h2>
-              <p className="text-sm text-stone-600 mt-2 leading-relaxed">{result.the_one_thing.why}</p>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block mb-3">The High-Impact Pivot</span>
+              <h2 className="text-lg font-semibold text-zinc-900 tracking-tight leading-snug">{result.the_one_thing.change}</h2>
+              <p className="text-sm text-zinc-600 mt-3 leading-relaxed">{result.the_one_thing.why}</p>
             </div>
-            <div className="mt-6 pt-4 border-t border-stone-100 text-xs font-medium text-stone-500 flex items-center justify-between">
+            <div className="mt-8 pt-4 border-t border-zinc-100 text-xs text-zinc-500 flex items-center justify-between">
               <span>Potential Score with this change:</span>
-              <span className="text-stone-900 font-bold tabular-nums bg-stone-100 px-2.5 py-1 rounded-md">{Math.round(result.the_one_thing.score_with_it)} pts</span>
+              <span className="text-zinc-900 font-semibold tabular-nums bg-zinc-100 px-3 py-1 rounded-full">{Math.round(result.the_one_thing.score_with_it)} pts</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm p-6 flex flex-col">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400 block mb-3">Red Flags & Caps</span>
+          <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] p-6 flex flex-col">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block mb-4">Red Flags & Caps</span>
             {result.red_flags.length === 0 && result.caps_fired.length === 0 ? (
-              <div className="my-auto py-8 text-center text-stone-400 text-sm">No critical flags or caps recorded on this call.</div>
+              <div className="my-auto py-12 text-center text-zinc-400 text-xs">No critical flags or caps recorded.</div>
             ) : (
               <div className="space-y-3 overflow-y-auto max-h-[220px] pr-1">
                 {result.red_flags.map((f, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-red-50/60 border border-red-100 text-xs">
+                  <div key={i} className="p-3.5 rounded-xl bg-red-50/50 border border-red-100 text-xs">
                     <div className="font-semibold text-red-900 flex items-center justify-between">
                       {f.flag}
-                      <span className="uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">{f.severity}</span>
+                      <span className="uppercase text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">{f.severity}</span>
                     </div>
                     <div className="text-red-700/80 mt-1">{f.why}</div>
                   </div>
                 ))}
                 {result.caps_fired.map((c) => (
-                  <div key={c.id} className="p-3 rounded-xl bg-amber-50/60 border border-amber-100 text-xs">
+                  <div key={c.id} className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-100 text-xs">
                     <div className="font-semibold text-amber-900">Cap Fired: {c.id}</div>
                     <div className="text-amber-700/80 mt-1">{c.explanation}</div>
                   </div>
@@ -298,20 +289,20 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
 
-        {/* The Brief */}
-        <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm p-6">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400 mb-3">Session Brief</h2>
-          <p className="text-sm leading-relaxed text-stone-700 whitespace-pre-line">{result.brief}</p>
+        {/* Session Brief */}
+        <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] p-6 md:p-8">
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 mb-3">Session Brief</h2>
+          <p className="text-sm leading-relaxed text-zinc-700 whitespace-pre-line">{result.brief}</p>
         </div>
 
-        {/* Twelve Dimensions Scorecard */}
-        <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Evaluation Dimensions ({spec?.dimensions.length || 0})</h2>
-            <span className="text-xs text-stone-400">Click row to expand details & evidence</span>
+        {/* Evaluation Dimensions */}
+        <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] overflow-hidden">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Evaluation Dimensions ({spec?.dimensions.length || 0})</h2>
+            <span className="text-xs text-zinc-400">Click row to view evidence</span>
           </div>
 
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-zinc-100">
             {spec?.dimensions.map((d) => {
               const dim = result.dimensions.find((x) => x.id === d.id);
               if (!dim) return null;
@@ -319,52 +310,52 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               const pctOf = dim.disabled || dim.score === null ? 0 : (dim.score / d.points) * 100;
 
               return (
-                <div key={d.id} className="transition-colors hover:bg-stone-50/50">
+                <div key={d.id} className="transition-colors hover:bg-zinc-50/60">
                   <button 
                     onClick={() => setOpen(isOpen ? null : d.id)} 
                     className="w-full flex items-center gap-4 px-6 py-4 text-left group"
                   >
-                    <span className="text-xs font-mono text-stone-400 w-6 shrink-0">{d.id}</span>
-                    <span className={`text-sm font-medium flex-1 ${isOpen ? 'text-stone-900' : 'text-stone-700 group-hover:text-stone-900'}`}>
+                    <span className="text-xs font-mono text-zinc-400 w-6 shrink-0">{d.id}</span>
+                    <span className={`text-sm font-medium flex-1 ${isOpen ? 'text-zinc-900' : 'text-zinc-700 group-hover:text-zinc-900'}`}>
                       {d.name}
                     </span>
 
                     {dim.disabled ? (
-                      <span className="text-xs font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded">N/A</span>
+                      <span className="text-xs font-medium text-zinc-400 bg-zinc-100 px-2.5 py-0.5 rounded-full">N/A</span>
                     ) : (
                       <>
-                        <div className="hidden sm:block w-28 h-2 bg-stone-100 rounded-full overflow-hidden relative">
+                        <div className="hidden sm:block w-28 h-1.5 bg-zinc-100 rounded-full overflow-hidden relative">
                           <div className="absolute left-0 top-0 h-full rounded-full transition-all" style={{ width: `${pctOf}%`, background: toneHex(pctOf) }} />
                         </div>
-                        <span className="tabular-nums text-sm font-semibold w-16 text-right text-stone-900">
-                          {dim.score}<span className="text-stone-400 text-xs font-normal">/{d.points}</span>
+                        <span className="tabular-nums text-sm font-semibold w-16 text-right text-zinc-900">
+                          {dim.score}<span className="text-zinc-400 text-xs font-normal">/{d.points}</span>
                         </span>
                       </>
                     )}
-                    <span className={`text-stone-400 text-xs transition-transform duration-200 ml-2 ${isOpen ? 'rotate-90 text-stone-900 font-bold' : ''}`}>›</span>
+                    <span className={`text-zinc-400 text-xs transition-transform duration-200 ml-2 ${isOpen ? 'rotate-90 text-zinc-900' : ''}`}>›</span>
                   </button>
 
                   {isOpen && (
-                    <div className="px-6 pb-6 pt-2 bg-stone-50/40 border-t border-stone-100 space-y-5">
+                    <div className="px-6 pb-6 pt-3 bg-zinc-50/50 border-t border-zinc-100 space-y-5">
                       {dim.disabled ? (
-                        <p className="text-xs text-stone-500 italic py-2">Reason disabled: {dim.disabled_reason || 'Not applicable to this call type.'}</p>
+                        <p className="text-xs text-zinc-500 italic py-2">Reason disabled: {dim.disabled_reason || 'Not applicable to this call type.'}</p>
                       ) : (
                         <>
                           <div>
-                            <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 mb-1.5">Reasoning</h4>
-                            <p className="text-sm leading-relaxed text-stone-700">{dim.reasoning}</p>
+                            <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">Reasoning</h4>
+                            <p className="text-sm leading-relaxed text-zinc-700">{dim.reasoning}</p>
                           </div>
 
                           <div>
-                            <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 mb-1.5">Verbatim Evidence</h4>
+                            <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">Verbatim Evidence</h4>
                             {dim.evidence_absent || dim.evidence.length === 0 ? (
-                              <p className="text-xs text-stone-500 italic bg-stone-100/70 p-3 rounded-lg border border-stone-200/50">
-                                This behavior was absent from the transcript and scored accordingly.
+                              <p className="text-xs text-zinc-500 italic bg-zinc-100/70 p-3 rounded-xl border border-zinc-200/50">
+                                This behavior was absent from the transcript.
                               </p>
                             ) : (
                               <div className="space-y-2">
                                 {dim.evidence.map((q, i) => (
-                                  <div key={i} className="text-xs text-stone-700 font-mono bg-white p-3 rounded-lg border border-stone-200/80 shadow-sm leading-relaxed">
+                                  <div key={i} className="text-xs text-zinc-700 font-mono bg-white p-3.5 rounded-xl border border-zinc-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] leading-relaxed">
                                     &ldquo;{q}&rdquo;
                                   </div>
                                 ))}
@@ -373,8 +364,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                           </div>
 
                           <div>
-                            <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 mb-1.5">Quick Fix to reach {d.points}/{d.points}</h4>
-                            <p className="text-sm leading-relaxed text-stone-700 bg-amber-50/50 border border-amber-200/60 p-3.5 rounded-xl text-amber-900/90">{dim.quick_fix}</p>
+                            <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">Quick Fix to reach {d.points}/{d.points}</h4>
+                            <p className="text-sm leading-relaxed text-zinc-800 bg-amber-50/60 border border-amber-200/60 p-4 rounded-xl">{dim.quick_fix}</p>
                           </div>
                         </>
                       )}
@@ -454,7 +445,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg z-50 animate-fade-in">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-xs font-medium px-5 py-3 rounded-2xl shadow-xl z-50 animate-fade-in tracking-wide">
           {toast}
         </div>
       )}
@@ -463,18 +454,18 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 }
 
 function Shell({ children }: { children: ReactNode }) {
-  return <main className="min-h-screen bg-stone-50 text-stone-900"><div className="max-w-4xl mx-auto px-6 py-24">{children}</div></main>;
+  return <main className="min-h-screen bg-[#FBFBFD] text-zinc-900"><div className="max-w-4xl mx-auto px-6 py-24">{children}</div></main>;
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 mb-1">{label}</span>
+      <span className="block text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 mb-1">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={`Enter ${label.toLowerCase()}`}
-        className="w-full text-sm bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg focus:outline-none focus:border-stone-900 focus:bg-white transition-all placeholder:text-stone-300"
+        className="w-full text-xs font-medium bg-zinc-50 border border-zinc-200/80 px-3 py-2 rounded-xl focus:outline-none focus:border-zinc-900 focus:bg-white transition-all placeholder:text-zinc-300"
       />
     </label>
   );
