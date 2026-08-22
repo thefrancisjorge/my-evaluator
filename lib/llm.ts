@@ -6,15 +6,7 @@ import { RUBRIC, type CallType, activeMax, normalise, bandFor, validateScores } 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) console.error('GEMINI_API_KEY is not set.');
 
-/**
- * Verify this against the current model list before deploying.
- *
- * A flash-lite tier is the wrong choice here: a 32 kB rubric plus a
- * transcript up to 65 kB, twelve weighted judgements, six automatic caps,
- * and a requirement that the same transcript scores the same way twice.
- * Use a reasoning-capable tier and temperature 0.
- */
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
 
 export const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
@@ -76,7 +68,6 @@ function schemaFor(callType: CallType) {
     properties: {
       dimensions: {
         type: Type.ARRAY,
-        // These are int64 in the API, so the SDK types them as string.
         minItems: '12',
         maxItems: '12',
         items: {
@@ -201,11 +192,6 @@ ${transcript}`;
 const squash = (s: string) =>
   s.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
 
-/**
- * Every quote the model returns is checked back against the transcript.
- * A quote that is not in there is a fabrication, and one of the four
- * transcripts in the exercise exists to catch exactly that.
- */
 function verifyEvidence(result: { dimensions: DimensionResult[] }, transcript: string) {
   const haystack = squash(transcript);
   const unverified: string[] = [];
@@ -252,7 +238,6 @@ export async function evaluateCall(transcript: string, callType: CallType): Prom
     throw new Error('The model returned malformed JSON. Check the response schema against the SDK version.');
   }
 
-  // Reject a bad response before it ever reaches the database.
   const problems = validateScores(callType, parsed.dimensions ?? []);
   if (problems.length) {
     throw new Error(`The model broke the rubric contract:\n${problems.map((p: string) => `• ${p}`).join('\n')}`);
