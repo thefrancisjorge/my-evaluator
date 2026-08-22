@@ -1,0 +1,241 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/0az8vxg2gfuhm.js"/><script src="/_next/static/chunks/2ul8ophnk13y-.js" async=""></script><script src="/_next/static/chunks/0afg_zjot81tg.js" async=""></script><script src="/_next/static/chunks/39kbuq5y--kd2.js" async=""></script><script src="/_next/static/chunks/turbopack-0rb86shmcim-n.js" async=""></script><script src="/_next/static/chunks/0ehjiuuxbbhq9.js" async="" crossorigin=""></script><script src="/_next/static/chunks/1ru_h36h_3q7g.js" async="" crossorigin=""></script><script src="/_next/static/chunks/2a6ixx3yhwhd1.js" async="" crossorigin=""></script><title>Call Evaluator AI</title><meta name="description" content="AI-powered call transcript evaluation platform"/><script src="/_next/static/chunks/0cz1d0mv5g_q7.js" noModule=""></script></head><body style="margin:0;padding:0;font-family:-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif;background-color:#ffffff;color:#2D2D2D;line-height:1.6"><div hidden=""><!--$--><!--/$--></div><div class="ce"><style>
+.ce {
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --line: rgba(0,0,0,0.09);
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --blue: #0071e3;
+  --blue-dark: #0060c8;
+
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.ce *, .ce *::before, .ce *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+/* layout */
+.ce-wrap { width: 100%; max-width: 980px; margin: 0 auto; padding: 0 22px; }
+.ce-section { padding: 104px 0; }
+.ce-band { background: var(--surface-2); }
+.ce-anchor { scroll-margin-top: 76px; }
+
+/* nav */
+.ce-nav {
+  position: sticky; top: 0; z-index: 50;
+  height: 48px;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s ease;
+}
+.ce-nav.is-scrolled { border-bottom-color: var(--line); }
+.ce-nav-inner {
+  height: 100%; display: flex; align-items: center; justify-content: space-between;
+  max-width: 980px; margin: 0 auto; padding: 0 22px;
+}
+.ce-mark { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.ce-mark span { color: var(--muted); font-weight: 400; }
+.ce-nav-links { display: flex; align-items: center; gap: 24px; }
+.ce-nav-links a {
+  font-size: 12px; color: var(--ink); text-decoration: none; opacity: .82;
+  transition: opacity .2s ease;
+}
+.ce-nav-links a:hover { opacity: 1; }
+@media (max-width: 680px) { .ce-nav-links .ce-hide-sm { display: none; } }
+
+/* hero */
+.ce-hero { padding: 88px 0 66px; text-align: center; }
+.ce-eyebrow {
+  font-size: 19px; font-weight: 600; color: var(--blue);
+  letter-spacing: -0.01em; margin: 0 0 8px;
+}
+.ce-h1 {
+  font-size: clamp(38px, 7vw, 68px);
+  line-height: 1.06; letter-spacing: -0.035em; font-weight: 700;
+  margin: 0 0 20px;
+}
+.ce-sub {
+  font-size: clamp(17px, 2.4vw, 21px); line-height: 1.45; color: var(--muted);
+  max-width: 660px; margin: 0 auto 34px; letter-spacing: -0.01em;
+}
+.ce-cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* buttons */
+.ce-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 980px; padding: 12px 24px;
+  font-family: inherit; font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+  text-decoration: none; cursor: pointer;
+  background: var(--blue); color: #fff;
+  transition: background .2s ease, transform .2s ease;
+}
+.ce-btn:hover { background: var(--blue-dark); }
+.ce-btn:active { transform: scale(0.97); }
+.ce-btn-ghost {
+  background: transparent; color: var(--blue);
+  box-shadow: inset 0 0 0 1px rgba(0,113,227,0.35);
+}
+.ce-btn-ghost:hover { background: rgba(0,113,227,0.06); }
+.ce-btn-block { width: 100%; padding: 14px 24px; font-size: 16px; }
+.ce-btn:disabled { background: #b8b8bd; cursor: not-allowed; transform: none; }
+.ce-btn:focus-visible, .ce-nav-links a:focus-visible, .ce-field:focus-visible,
+.ce-row:focus-visible, .ce-chip:focus-visible {
+  outline: 2px solid var(--blue); outline-offset: 3px;
+}
+
+/* section heads */
+.ce-h2 {
+  font-size: clamp(28px, 4.2vw, 42px);
+  line-height: 1.12; letter-spacing: -0.028em; font-weight: 700;
+  margin: 0 0 14px; text-align: center;
+}
+.ce-lead {
+  font-size: 17px; line-height: 1.5; color: var(--muted);
+  text-align: center; max-width: 600px; margin: 0 auto 56px;
+}
+
+/* steps */
+.ce-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 820px) { .ce-steps { grid-template-columns: 1fr; } }
+.ce-step {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 18px; padding: 30px 28px; height: 100%;
+}
+.ce-step-num {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  color: var(--blue); margin: 0 0 14px;
+}
+.ce-step h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 8px; }
+.ce-step p { font-size: 15px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* report breakdown */
+.ce-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 820px) { .ce-split { grid-template-columns: 1fr; } }
+.ce-item {
+  border-top: 1px solid var(--line); padding: 22px 0 4px;
+}
+.ce-item h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 6px; }
+.ce-item p { font-size: 15px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* tool panel */
+.ce-panel {
+  background: var(--surface); border-radius: 22px; padding: 40px;
+  border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+}
+@media (max-width: 620px) { .ce-panel { padding: 26px 20px; border-radius: 18px; } }
+.ce-form { display: flex; flex-direction: column; gap: 22px; }
+.ce-label {
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.ce-hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+.ce-field {
+  width: 100%; padding: 13px 15px;
+  border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-family: inherit; font-size: 16px; color: var(--ink); outline: none;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.ce-field::placeholder { color: #a1a1a6; }
+.ce-field:focus {
+  background: var(--surface); border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(0,113,227,0.12);
+}
+textarea.ce-field { resize: vertical; min-height: 200px; line-height: 1.55; }
+.ce-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ce-chip {
+  font-family: inherit; font-size: 13px; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 980px; padding: 6px 13px; cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+.ce-chip:hover { color: var(--ink); border-color: rgba(0,0,0,0.2); }
+.ce-chip.is-active {
+  background: rgba(0,113,227,0.08); border-color: rgba(0,113,227,0.4); color: var(--blue);
+}
+
+/* report */
+.ce-report { margin-top: 38px; padding-top: 32px; border-top: 1px solid var(--line); }
+.ce-report-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.ce-report-head h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.ce-report-meta { font-size: 13px; color: var(--muted); }
+.ce-report-body {
+  background: var(--surface-2); border-radius: 16px; padding: 26px 28px;
+  font-size: 15px; line-height: 1.62;
+}
+.ce-report-body h1, .ce-report-body h2, .ce-report-body h3 {
+  letter-spacing: -0.02em; margin: 22px 0 8px; font-weight: 600;
+}
+.ce-report-body h1:first-child, .ce-report-body h2:first-child { margin-top: 0; }
+.ce-report-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+.ce-report-body th, .ce-report-body td {
+  border: 1px solid var(--line); padding: 9px 12px; text-align: left;
+}
+.ce-report-body th { background: rgba(0,0,0,0.03); font-weight: 600; }
+.ce-report-body code {
+  background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 5px; font-size: 13px;
+}
+
+/* history */
+.ce-rows { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.ce-row {
+  width: 100%; text-align: left; font-family: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px 20px; cursor: pointer;
+  transition: transform .2s ease, box-shadow .25s ease, border-color .2s ease;
+}
+.ce-row:hover {
+  border-color: rgba(0,0,0,0.16); box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+.ce-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 5px; }
+.ce-row-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.ce-row-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ce-row-preview {
+  margin: 0; font-size: 14px; color: var(--muted); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ce-empty {
+  border: 1px dashed var(--line); border-radius: 14px; padding: 40px 24px;
+  text-align: center; color: var(--muted); font-size: 15px;
+}
+
+/* collab */
+.ce-collab { text-align: center; }
+.ce-avatar {
+  width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 20px;
+  display: grid; place-items: center;
+  background: linear-gradient(145deg, #1d1d1f, #4a4a4f);
+  color: #fff; font-size: 20px; font-weight: 600; letter-spacing: -0.02em;
+}
+.ce-name { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; }
+.ce-role { font-size: 16px; color: var(--muted); margin: 0 auto 28px; max-width: 520px; line-height: 1.5; }
+
+/* footer */
+.ce-footer { border-top: 1px solid var(--line); padding: 34px 0; }
+.ce-footer-inner {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-size: 12px; color: var(--muted);
+}
+.ce-footer a { color: var(--muted); text-decoration: none; }
+.ce-footer a:hover { color: var(--ink); }
+
+/* reveal */
+.ce-reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.22,.7,.3,1); }
+.ce-reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ce-reveal { opacity: 1; transform: none; transition: none; }
+  .ce *, .ce *::before, .ce *::after { transition-duration: .01ms !important; }
+}
+</style><nav class="ce-nav"><div class="ce-nav-inner"><div class="ce-mark">CallEvaluator<span>.ai</span></div><div class="ce-nav-links"><a class="ce-hide-sm" href="#how">How it works</a><a class="ce-hide-sm" href="#report">The report</a><a href="#evaluator">Evaluate</a><a href="#history">History</a><a href="#collab">Collab</a></div></div></nav><header class="ce-wrap ce-hero"><div class="ce-reveal" style="transition-delay:0ms"><p class="ce-eyebrow">Call QA</p><h1 class="ce-h1">Turn a transcript<br/>into coaching.</h1><p class="ce-sub">Paste any call transcript and get a scored evaluation back — what the agent did well, what was missed, and what to work on next. Every report is saved, so a month of calls becomes a record you can look back on.</p><div class="ce-cta-row"><a class="ce-btn" href="#evaluator">Evaluate a call</a><a class="ce-btn ce-btn-ghost" href="#how">How it works</a></div></div></header><section id="how" class="ce-band ce-anchor"><div class="ce-wrap ce-section"><div class="ce-reveal" style="transition-delay:0ms"><h2 class="ce-h2">Three steps, about a minute.</h2><p class="ce-lead">No setup, no template to configure. The call type and the transcript are the only two things it needs.</p></div><div class="ce-steps"><div class="ce-reveal" style="transition-delay:0ms"><article class="ce-step"><p class="ce-step-num">STEP 1</p><h3>Name the call type</h3><p>The call type is sent with the transcript, so the evaluation is judged against a sales call or a support call — not one generic standard.</p></article></div><div class="ce-reveal" style="transition-delay:90ms"><article class="ce-step"><p class="ce-step-num">STEP 2</p><h3>Paste the transcript</h3><p>Any length, any format. Speaker labels help, but raw text works. Nothing is uploaded until you press Evaluate call.</p></article></div><div class="ce-reveal" style="transition-delay:180ms"><article class="ce-step"><p class="ce-step-num">STEP 3</p><h3>Read and keep the report</h3><p>The report renders below the form, and the transcript is filed with it in the same record — so you can always read the feedback next to the call it came from.</p></article></div></div></div></section><section id="report" class="ce-anchor"><div class="ce-wrap ce-section"><div class="ce-reveal" style="transition-delay:0ms"><h2 class="ce-h2">What comes back.</h2><p class="ce-lead">Every report comes back in the same five sections, so two calls from two agents can actually be compared side by side.</p></div><div class="ce-split"><div class="ce-reveal" style="transition-delay:0ms"><div class="ce-item"><h3>An overall score out of 100</h3><p>One number for the whole call, with a sentence explaining what drove it — enough to triage a stack of calls without opening each one.</p></div></div><div class="ce-reveal" style="transition-delay:70ms"><div class="ce-item"><h3>A category table</h3><p>Four to six categories scored out of 10 with a note each. The categories are chosen to fit the call type, so a support call is not graded on closing technique.</p></div></div><div class="ce-reveal" style="transition-delay:0ms"><div class="ce-item"><h3>What went well, quoted</h3><p>Each strength cites the actual line from the transcript, so the agent can hear the moment again instead of taking the praise on faith.</p></div></div><div class="ce-reveal" style="transition-delay:70ms"><div class="ce-item"><h3>What was missed, with a fix</h3><p>Every gap names where it belonged in the call and gives the better alternative — the wording the agent should have used instead.</p></div></div><div class="ce-reveal" style="transition-delay:0ms"><div class="ce-item"><h3>Three actions to practise</h3><p>The report closes with a numbered coaching plan a team lead can hand over as-is before the agent takes their next call.</p></div></div><div class="ce-reveal" style="transition-delay:70ms"><div class="ce-item"><h3>The call kept with the review</h3><p>Transcript, report, call type, and timestamp are saved as one record, each with its own page at /evaluations/[id] you can link to or revisit.</p></div></div></div></div></section><section id="evaluator" class="ce-band ce-anchor"><div class="ce-wrap ce-section"><div class="ce-reveal" style="transition-delay:0ms"><h2 class="ce-h2">Evaluate a call.</h2><p class="ce-lead">The report appears below the form and saves itself.</p></div><div class="ce-reveal" style="transition-delay:80ms"><div class="ce-panel"><form class="ce-form"><div><label class="ce-label" for="callType">Call type</label><input id="callType" class="ce-field" type="text" placeholder="Inbound Sales" value="Inbound Sales"/><div class="ce-chips"><button type="button" class="ce-chip is-active">Inbound Sales</button><button type="button" class="ce-chip">Outbound Sales</button><button type="button" class="ce-chip">Customer Support</button><button type="button" class="ce-chip">Technical Support</button><button type="button" class="ce-chip">Retention</button><button type="button" class="ce-chip">Collections</button></div><p class="ce-hint">Type your own if none of these fit. Whatever is in this field is what the evaluation is measured against.</p></div><div><label class="ce-label" for="transcript">Call transcript</label><textarea id="transcript" class="ce-field" placeholder="Agent: Thanks for calling, how can I help today?
+Customer: Hi, I’m following up on my order from last week…"></textarea><p class="ce-hint" style="text-align:right">No transcript yet</p></div><button class="ce-btn ce-btn-block" type="submit" disabled="">Evaluate call</button></form></div></div></div></section><section id="history" class="ce-anchor"><div class="ce-wrap ce-section"><div class="ce-reveal" style="transition-delay:0ms"><h2 class="ce-h2">Everything you have run.</h2><p class="ce-lead">Reports appear here the moment they are saved, newest first.</p></div><div class="ce-reveal" style="transition-delay:80ms"><div class="ce-empty">Nothing saved yet. Run your first evaluation above and it will show up here.</div></div></div></section><section id="collab" class="ce-band ce-anchor"><div class="ce-wrap ce-section ce-collab"><div class="ce-reveal" style="transition-delay:0ms"><div class="ce-avatar" aria-hidden="true">FJ</div><h2 class="ce-h2" style="margin-bottom:18px">Let&#x27;s collab.</h2><p class="ce-name">Francis Jorge Asilum</p><p class="ce-role">I built CallEvaluator.ai and I&#x27;m open to working on similar tools — QA workflows, internal dashboards, anything that turns messy text into something a team can act on. Message me and let&#x27;s talk.</p><a class="ce-btn" href="https://www.linkedin.com/in/thefrancisjorge/" target="_blank" rel="noopener noreferrer">Connect on LinkedIn →</a></div></div></section><footer class="ce-footer"><div class="ce-wrap ce-footer-inner"><span>© <!-- -->2026<!-- --> CallEvaluator.ai — Francis Jorge Asilum</span><span>Next.js · Supabase · Google Gemini ·<!-- --> <a href="https://www.linkedin.com/in/thefrancisjorge/" target="_blank" rel="noopener noreferrer">LinkedIn</a></span></div></footer></div><!--$--><!--/$--><script src="/_next/static/chunks/0az8vxg2gfuhm.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[39756,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"default\"]\n3:I[37457,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"default\"]\n4:I[47257,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"ClientPageRoot\"]\n5:I[31713,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\",\"/_next/static/chunks/1ru_h36h_3q7g.js\",\"/_next/static/chunks/2a6ixx3yhwhd1.js\"],\"default\"]\n8:I[97367,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"OutletBoundary\"]\n9:\"$Sreact.suspense\"\nb:I[97367,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"ViewportBoundary\"]\nd:I[97367,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"MetadataBoundary\"]\nf:I[68027,[\"/_next/static/chunks/0ehjiuuxbbhq9.js\"],\"default\",1]\n0:{\"P\":null,\"c\":[\"\",\"\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"__PAGE__\",{},\"$undefined\",\"$undefined\",4608]},\"$undefined\",\"$undefined\",4624],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/0ehjiuuxbbhq9.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[\"$\",\"body\",null,{\"style\":{\"margin\":0,\"padding\":0,\"fontFamily\":\"-apple-system, BlinkMacSystemFont, \\\"Segoe UI\\\", Roboto, Helvetica, Arial, sans-serif\",\"backgroundColor\":\"#ffffff\",\"color\":\"#2D2D2D\",\"lineHeight\":1.6},\"children\":[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"$L4\",null,{\"Component\":\"$5\",\"serverProvidedParams\":{\"searchParams\":{},\"params\":{},\"promises\":[\"$@6\",\"$@7\"]}}],[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/1ru_h36h_3q7g.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-1\",{\"src\":\"/_next/static/chunks/2a6ixx3yhwhd1.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L8\",null,{\"children\":[\"$\",\"$9\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@a\"}]}]]}],{},null,false,null]},null,false,null],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$Lb\",null,{\"children\":\"$Lc\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$Ld\",null,{\"children\":[\"$\",\"$9\",null,{\"name\":\"Next.Metadata\",\"children\":\"$Le\"}]}]}],null]}],false]],\"m\":\"$undefined\",\"G\":[\"$f\",[]],\"S\":true,\"h\":null,\"r\":\"$undefined\",\"s\":\"$undefined\",\"a\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"WzROuLj8W7kQp_C9KaSER\"}\n6:{}\n7:\"$0:f:0:1:1:children:0:props:children:0:props:serverProvidedParams:params\"\nc:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\na:null\ne:[[\"$\",\"title\",\"0\",{\"children\":\"Call Evaluator AI\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"AI-powered call transcript evaluation platform\"}]]\n"])</script></body></html>
