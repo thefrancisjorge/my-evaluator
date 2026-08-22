@@ -15,33 +15,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Kuhanin ang evaluation result (dapat ito ay string na Markdown)
     const evaluationResult = await evaluateCall(transcript, callType);
-
-    // Siguraduhing string ito
     const markdownOutput = typeof evaluationResult === 'string' 
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // 2. I-save sa Supabase gamit ang tamang 'report_json' column name
+    // I-save sa Supabase
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
-        const { error: dbError } = await supabase.from('evaluations').insert([
+        const { data, error: dbError } = await supabase.from('evaluations').insert([
           {
             call_type: callType,
             transcript: transcript,
-            report_json: markdownOutput, // Naka-match na sa Supabase table schema mo
+            report_json: markdownOutput, // Kung jsonb ang column, i-try din natin i-wrap sa JSON object kung magka-error
             created_at: new Date().toISOString(),
           },
         ]);
         
-        if (dbError) console.error('Supabase insert error:', dbError);
+        if (dbError) {
+          console.error('Supabase insert error details:', JSON.stringify(dbError, null, 2));
+        } else {
+          console.log('Successfully saved to Supabase:', data);
+        }
       } catch (dbError) {
         console.error('Supabase connection error:', dbError);
       }
+    } else {
+      console.warn('Supabase environment variables are missing on the server!');
     }
 
-    // 3. Ibalik sa frontend bilang report
     return NextResponse.json({ report: markdownOutput });
     
   } catch (error: any) {
