@@ -624,7 +624,8 @@ export default function Home() {
                           })}
                         </span>
                       </div>
-                      <p className="ce-row-preview">{plainPreview(item.report)}</p>
+                      {/* Pinalitan ang item.report ng item.report_json para lumitaw na ang preview */}
+                      <p className="ce-row-preview">{plainPreview(item.report_json)}</p>
                     </button>
                   </li>
                 ))}
