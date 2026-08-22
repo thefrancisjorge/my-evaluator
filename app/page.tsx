@@ -5,171 +5,207 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { supabase } from '../supabase';
 
-export default function HomePage() {
+export default function Home() {
   const [callType, setCallType] = useState('Inbound Sales');
   const [transcript, setTranscript] = useState('');
+  const [report, setReport] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string>('');
-  const [error, setError] = useState('');
   const [history, setHistory] = useState<any[]>([]);
 
-  // Function para kunin ang evaluation history mula sa Supabase
   const fetchHistory = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('evaluations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+    const { data, error } = await supabase
+      .from('evaluations')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (data) setHistory(data);
-    } catch (err) {
-      console.error('Error fetching history:', err);
-    }
+    if (data) setHistory(data);
+    if (error) console.error('Error fetching history:', error);
   };
 
-  // I-load ang history sa unang bukas ng page
   useEffect(() => {
     fetchHistory();
   }, []);
 
-  const handleEvaluate = async () => {
-    if (!transcript.trim()) {
-      setError('Please provide a call transcript.');
-      return;
-    }
+  const handleEvaluate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transcript.trim()) return;
 
     setLoading(true);
-    setError('');
-    setResult('');
+    setReport('');
 
     try {
-      const response = await fetch('/api/evaluate', {
+      const res = await fetch('/api/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callType, transcript }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
+      if (data.report) {
+        setReport(data.report);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to evaluate call');
-      }
+        // Save to Supabase
+        await supabase.from('evaluations').insert([
+          {
+            call_type: callType,
+            transcript: transcript,
+            report: data.report,
+          },
+        ]);
 
-      // Kuhanin nang direkta ang rawOutput string mula sa JSON response
-      let cleanResult = '';
-      if (typeof data === 'string') {
-        cleanResult = data;
-      } else if (data && typeof data.rawOutput === 'string') {
-        cleanResult = data.rawOutput;
+        fetchHistory();
       } else {
-        cleanResult = String(data);
+        setReport('Failed to generate evaluation report.');
       }
-
-      setResult(cleanResult);
-
-      // I-refresh ang history list pagka-evaluate
-      fetchHistory();
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (err) {
+      console.error(err);
+      setReport('An error occurred during evaluation.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
-      <h1>Call Evaluator AI</h1>
-      <p style={{ color: '#666' }}>Paste a call transcript below to evaluate using Gemini AI.</p>
+    <main style={{ maxWidth: '720px', margin: '3rem auto', padding: '0 1.5rem' }}>
+      {/* Header */}
+      <header style={{ marginBottom: '2.5rem', textAlign: 'left' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: '700', letterSpacing: '-0.03em', margin: '0 0 0.5rem 0', color: '#111' }}>
+          Call Evaluator AI
+        </h1>
+        <p style={{ color: '#666', fontSize: '1rem', margin: 0, fontWeight: '400' }}>
+          Analyze and score call transcripts instantly with structured AI feedback.
+        </p>
+      </header>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Type</label>
-        <input
-          type="text"
-          value={callType}
-          onChange={(e) => setCallType(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-        />
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Transcript</label>
-        <textarea
-          rows={10}
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          placeholder="Agent: Hello...\nCustomer: Hi..."
-          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-        />
-      </div>
-
-      <button
-        onClick={handleEvaluate}
-        disabled={loading}
-        style={{
-          width: '100%',
-          padding: '0.75rem',
-          backgroundColor: loading ? '#ccc' : '#0070f3',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {loading ? 'Evaluating Call...' : 'Evaluate Call'}
-      </button>
-
-      {error && (
-        <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#ffe6e6', color: '#d8000c', borderRadius: '4px' }}>
-          <strong>Error:</strong> {error}
+      {/* Evaluation Form */}
+      <form onSubmit={handleEvaluate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#333' }}>
+            Call Type
+          </label>
+          <input
+            type="text"
+            value={callType}
+            onChange={(e) => setCallType(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #eaeaea',
+              fontSize: '0.95rem',
+              backgroundColor: '#fafafa',
+              boxSizing: 'border-box',
+              outline: 'none',
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#111'}
+            onBlur={(e) => e.target.style.borderColor = '#eaeaea'}
+          />
         </div>
-      )}
 
-      {result && (
-        <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#333' }}>
+            Call Transcript
+          </label>
+          <textarea
+            rows={8}
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder="Paste transcript here..."
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #eaeaea',
+              fontSize: '0.95rem',
+              fontFamily: 'inherit',
+              backgroundColor: '#fafafa',
+              boxSizing: 'border-box',
+              resize: 'vertical',
+              outline: 'none',
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#111'}
+            onBlur={(e) => e.target.style.borderColor = '#eaeaea'}
+          />
         </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: '0.85rem 1.5rem',
+            backgroundColor: loading ? '#888' : '#111111',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.2s',
+            marginTop: '0.5rem',
+          }}
+        >
+          {loading ? 'Evaluating...' : 'Evaluate Call'}
+        </button>
+      </form>
+
+      {/* Generated Report Result */}
+      {report && (
+        <section style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid #eaeaea' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', letterSpacing: '-0.01em' }}>
+            Latest Result
+          </h2>
+          <div style={{ padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
+          </div>
+        </section>
       )}
 
       {/* History Section */}
-      <div style={{ marginTop: '4rem', borderTop: '2px solid #eaeaea', paddingTop: '2rem' }}>
-        <h2>Recent Evaluations</h2>
+      <section style={{ marginTop: '3.5rem', paddingTop: '2rem', borderTop: '1px solid #eaeaea' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.25rem', letterSpacing: '-0.01em' }}>
+          Recent Evaluations
+        </h2>
         {history.length === 0 ? (
-          <p style={{ color: '#666' }}>No history records found yet.</p>
+          <p style={{ color: '#888', fontSize: '0.9rem' }}>No evaluation records found yet.</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {history.map((item) => (
-              <li 
-                key={item.id} 
-                onClick={() => {
-                  setResult(item.report);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                style={{ 
-                  marginBottom: '1rem', 
-                  padding: '1rem', 
-                  border: '1px solid #eaeaea', 
-                  borderRadius: '6px', 
-                  backgroundColor: '#fafafa',
+              <li
+                key={item.id}
+                onClick={() => (window.location.href = `/evaluations/${item.id}`)}
+                style={{
+                  padding: '1rem 1.25rem',
+                  border: '1px solid #eaeaea',
+                  borderRadius: '6px',
+                  backgroundColor: '#ffffff',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  transition: 'border-color 0.2s, background-color 0.2s',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#111';
+                  e.currentTarget.style.backgroundColor = '#fafafa';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#eaeaea';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <strong>{item.call_type}</strong>
-                  <small style={{ color: '#888' }}>{new Date(item.created_at).toLocaleString()}</small>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <strong style={{ fontSize: '0.95rem', color: '#111' }}>{item.call_type}</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.report}
-                </div>
+                </p>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
     </main>
   );
 }
