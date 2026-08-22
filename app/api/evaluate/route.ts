@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server';
 import { evaluateCall } from '@/lib/llm';
 import { createClient } from '@supabase/supabase-js';
 
-// Gumamit ng Supabase Admin client gamit ang service role key para i-bypass ang RLS restrictions sa pag-save
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
@@ -25,14 +24,11 @@ export async function POST(req: Request) {
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // I-save diretso sa Supabase gamit ang admin client
+    // Tanggalin muna ang coach, client, program kung wala pa sa DB schema
     const { data, error: dbError } = await supabaseAdmin.from('evaluations').insert([
       {
         call_type: callType,
         transcript: transcript,
-        coach: coach || null,
-        client: client || null,
-        program: program || null,
         result: markdownOutput,
         status: 'done',
       },
