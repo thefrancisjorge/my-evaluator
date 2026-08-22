@@ -33,13 +33,13 @@ export default function HomePage() {
         throw new Error(data.error || 'Failed to evaluate call');
       }
 
-      // Safe extraction whether data is string or object
+      // Kuhanin ang rawOutput string o fallback sa stringified version
       if (typeof data === 'string') {
         setResult(data);
-      } else if (data.rawOutput) {
+      } else if (data && typeof data.rawOutput === 'string') {
         setResult(data.rawOutput);
       } else {
-        setResult(JSON.stringify(data, null, 2));
+        setResult(String(data));
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
