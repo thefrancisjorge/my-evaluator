@@ -22,8 +22,5 @@ export async function evaluateCall(transcript: string, callType: string) {
     contents: prompt,
   });
 
-  return {
-    rawOutput: response.text,
-    evaluatedAt: new Date().toISOString(),
-  };
+  return response.text;
 }
