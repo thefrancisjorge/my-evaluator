@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { supabase } from '../supabase';
+import { supabase } from '@/lib/supabase';
 
 /* ---------------------------------- styles --------------------------------- */
 

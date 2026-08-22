@@ -1,352 +1,453 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import { useEffect, useMemo, useState, use, type ReactNode } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { RUBRIC, type CallType } from '@/lib/rubrics';
 
-interface Criterion {
-  name: string;
-  score: number;
-  maxScore: number;
-  evidence: string;
-  quickFix: string;
-}
-
-interface EvaluationData {
+interface Dim {
   id: string;
-  coach: string;
-  client: string;
-  program: string;
-  callType: 'Coaching Call' | 'Kickoff Call';
-  overallPercentage: number;
-  date: string;
-  transcriptSummary: string;
-  criteria: Criterion[];
+  score: number | null;
+  disabled: boolean;
+  disabled_reason: string | null;
+  reasoning: string;
+  evidence: string[];
+  evidence_absent: boolean;
+  quick_fix: string;
 }
 
-const mockEvaluations: Record<string, EvaluationData> = {
-  '1': {
-    id: '1',
-    coach: 'Coach Marcus Vance',
-    client: 'Sarah Jenkins',
-    program: 'Elite Physique Transformation 12W',
-    callType: 'Coaching Call',
-    overallPercentage: 84,
-    date: '2026-06-06',
-    transcriptSummary:
-      'The session began with solid rapport-building and a check-in on sleep and nutrition metrics. Diagnostics review was thorough, though program focus could tie back tighter to the primary macro-goal. Movement coaching pointers on the squat depth were exceptional. Minor gaps in structured accountability anchoring toward the final 5 minutes.',
-    criteria: [
-      { name: 'Check in & connection', score: 9, maxScore: 10, evidence: 'Coach warmly welcomed the client, inquired about her week and energy levels immediately.', quickFix: 'Maintain the energetic tone but anchor the mood state right into performance readiness earlier.' },
-      { name: 'Diagnostics review', score: 8, maxScore: 10, evidence: 'Reviewed water intake and step logs efficiently using screen share.', quickFix: 'Inquire specifically about compliance bottlenecks behind the missing Friday tracking data.' },
-      { name: 'Program focus + vision', score: 7, maxScore: 10, evidence: 'Touched briefly on the 12-week milestone, but drifted quickly into daily habits.', quickFix: 'Explicitly tie today\u2019s macro adjustments back to the overarching end-of-quarter body composition target.' },
-      { name: 'Movement coaching quality', score: 10, maxScore: 10, evidence: 'Pinpointed knee valgus during single-leg romanian deadlifts and cued lateral knee drive accurately.', quickFix: 'None, stellar technical coaching delivery.' },
-      { name: 'Adjustments & strategy', score: 8, maxScore: 10, evidence: 'Decreased calorie deficit by 150kcal safely due to fatigue reports.', quickFix: 'Provide clearer rationale on how carbohydrate timing around workouts will change.' },
-      { name: 'Action steps & accountability', score: 7, maxScore: 10, evidence: 'Listed daily water goals and workout check-ins loosely at the end.', quickFix: 'Have the client repeat back the top 3 non-negotiable action items before wrapping up.' },
-      { name: 'Accountability anchor', score: 6, maxScore: 10, evidence: 'Failed to set a strict penalty or strict tracking consequence for missed check-ins.', quickFix: 'Establish a concrete digital accountability trigger (e.g., automated morning screenshot upload).' },
-      { name: 'Struggle handling', score: 9, maxScore: 10, evidence: 'Empathized gracefully with evening sweet-tooth cravings without sounding judgmental.', quickFix: 'Introduce a practical fiber/protein substitution strategy for late-night windows.' },
-      { name: 'Close quality', score: 8, maxScore: 10, evidence: 'Ended warmly, wishing her luck on upcoming travel days.', quickFix: 'Ensure structural transition into formal call closure before casual chatting.' },
-      { name: 'Next call booking', score: 10, maxScore: 10, evidence: 'Confirmed date and time for next Tuesday check-in live on the calendar.', quickFix: 'None.' },
-      { name: 'Continuity and follow up', score: 8, maxScore: 10, evidence: 'Promised to send a summary text via chat application post-call.', quickFix: 'Automate a template breakdown sheet instantly following session completion.' },
-    ],
-  },
-};
-
-/* ------------------------------------------------------------------ */
-/*  Score helpers                                                      */
-/*  Tailwind cannot build class names at runtime, so every variant is  */
-/*  written out in full.                                               */
-/* ------------------------------------------------------------------ */
-
-type Tone = 'good' | 'ok' | 'watch' | 'risk';
-
-const toneOf = (percent: number): Tone =>
-  percent >= 90 ? 'good' : percent >= 75 ? 'ok' : percent >= 60 ? 'watch' : 'risk';
-
-const BADGE: Record<Tone, string> = {
-  good: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  ok: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-  watch: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  risk: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-};
-
-const DOT: Record<Tone, string> = {
-  good: 'text-emerald-400',
-  ok: 'text-sky-400',
-  watch: 'text-amber-400',
-  risk: 'text-rose-400',
-};
-
-const VERDICT: Record<Tone, string> = {
-  good: 'Exceptional execution',
-  ok: 'High performance',
-  watch: 'Needs coaching',
-  risk: 'Below standard',
-};
-
-// Plain hex for the print sheet. html2canvas cannot parse oklch() or
-// color-mix(), which is what Tailwind v4 emits for every default colour
-// and every /opacity modifier.
-const HEX: Record<Tone, string> = {
-  good: '#047857',
-  ok: '#0369A1',
-  watch: '#B45309',
-  risk: '#BE123C',
-};
-
-/* ------------------------------------------------------------------ */
-
-interface PageProps {
-  params: Promise<{ id: string }>;
+interface Result {
+  call_type: CallType;
+  dimensions: Dim[];
+  caps_fired: { id: string; explanation: string }[];
+  the_one_thing: { change: string; why: string; score_with_it: number };
+  brief: string;
+  red_flags: { flag: string; why: string; severity: 'low' | 'medium' | 'high' }[];
+  raw_score: number;
+  max_possible: number;
+  percentage: number;
+  band: string;
+  band_blurb: string;
+  evidence_check: { total: number; verified: number; unverified: string[] };
 }
 
-export default function EvaluationDetailPage({ params }: PageProps) {
-  const resolvedParams = use(params);
-  const evalId = resolvedParams?.id || '1';
-  const evalData = mockEvaluations[evalId] || mockEvaluations['1'];
+const BAND_HEX: Record<string, string> = {
+  ELITE: '#1B7A5A', STRONG: '#2F6FA8', INCONSISTENT: '#A8761B', 'AT RISK': '#B8531F', FAIL: '#A32F2F',
+};
 
-  const [coach, setCoach] = useState(evalData.coach);
-  const [client, setClient] = useState(evalData.client);
-  const [program, setProgram] = useState(evalData.program);
-  const [callType, setCallType] = useState<'Coaching Call' | 'Kickoff Call'>(evalData.callType);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+const toneHex = (pct: number) => (pct >= 85 ? '#1B7A5A' : pct >= 65 ? '#A8761B' : '#A32F2F');
 
-  const overallTone = toneOf(evalData.overallPercentage);
-  const dateLabel = new Date(evalData.date).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
 
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true);
-    setPdfError(null);
+  const [row, setRow] = useState<any>(null);
+  const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'running' | 'failed'>('loading');
+  const [open, setOpen] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Fields the operator can correct without re-running the evaluation.
+  const [coach, setCoach] = useState('');
+  const [client, setClient] = useState('');
+  const [program, setProgram] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let stop = false;
+
+    const load = async () => {
+      const { data, error } = await supabase.from('evaluations').select('*').eq('id', id).single();
+      if (stop) return;
+      if (error || !data) { setState('missing'); return; }
+
+      setRow(data);
+      setCoach(data.coach ?? '');
+      setClient(data.client ?? '');
+      setProgram(data.program ?? '');
+
+      if (data.status === 'failed') setState('failed');
+      else if (data.status === 'done' || data.result) setState('ready');
+      else { setState('running'); setTimeout(load, 3000); }
+    };
+
+    load();
+    return () => { stop = true; };
+  }, [id]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const result: Result | null = useMemo(() => {
+    if (!row?.result) return null;
+    return typeof row.result === 'string' ? JSON.parse(row.result) : row.result;
+  }, [row]);
+
+  const spec = result ? RUBRIC[result.call_type] : null;
+
+  const saveFields = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('evaluations').update({ coach, client, program }).eq('id', id);
+    setSaving(false);
+    setToast(error ? 'Could not save' : 'Saved');
+  };
+
+  const downloadPDF = async () => {
+    setPdfBusy(true);
     try {
-      const element = document.getElementById('printable-report-card');
-      if (!element) throw new Error('Print sheet is not mounted.');
-
+      const el = document.getElementById('print-sheet');
+      if (!el) throw new Error('print sheet missing');
       const html2pdf = (await import('html2pdf.js')).default;
-
-      // The options object is passed straight into .set() on purpose.
-      // Pulling it out into a `const opt` widens 'jpeg' and 'portrait' to
-      // `string`, which no longer matches the literal unions the types
-      // expect — that is the TS2345 on image.type.
       await html2pdf()
-        .from(element)
+        .from(el)
         .set({
           margin: [0.5, 0.5, 0.6, 0.5],
-          filename: `Evaluation_${client.replace(/\s+/g, '_')}_${callType.replace(/\s+/g, '_')}.pdf`,
+          filename: `${(client || 'call').replace(/\s+/g, '-').toLowerCase()}-evaluation.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 900 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 900 },
           jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
         })
         .save();
-    } catch (error) {
-      console.error('PDF Generation Failed:', error);
-      setPdfError('Could not generate the PDF. Check the console for details.');
+    } catch (e) {
+      console.error(e);
+      setToast('PDF export failed');
     } finally {
-      setIsDownloading(false);
+      setPdfBusy(false);
     }
   };
 
+  /* ---------------- non-ready states ---------------- */
+
+  if (state === 'loading') {
+    return <Shell><div className="h-6 w-40 bg-stone-200 animate-pulse rounded" /><div className="mt-6 h-24 w-full bg-stone-100 animate-pulse rounded" /></Shell>;
+  }
+
+  if (state === 'missing') {
+    return (
+      <Shell>
+        <h1 className="text-2xl font-medium tracking-tight">This run doesn&apos;t exist</h1>
+        <p className="mt-2 text-stone-500">The link points to an id that was never created, or the run was deleted.</p>
+        <Link href="/" className="mt-6 inline-block bg-stone-900 text-white text-sm px-4 py-2 rounded">Evaluate a call</Link>
+      </Shell>
+    );
+  }
+
+  if (state === 'running') {
+    return (
+      <Shell>
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <h1 className="text-2xl font-medium tracking-tight">Still scoring</h1>
+        </div>
+        <p className="mt-2 text-stone-500 max-w-md">
+          This page refreshes itself. You can close the tab — the run finishes without you and this link will hold the result.
+        </p>
+        <p className="mt-4 text-xs font-mono text-stone-400">run {id.slice(0, 8)}</p>
+      </Shell>
+    );
+  }
+
+  if (state === 'failed' || !result) {
+    return (
+      <Shell>
+        <h1 className="text-2xl font-medium tracking-tight text-red-800">This run failed</h1>
+        <pre className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-sm text-red-900 whitespace-pre-wrap">
+          {row?.error || 'No reason was recorded.'}
+        </pre>
+        <Link href="/" className="mt-6 inline-block bg-stone-900 text-white text-sm px-4 py-2 rounded">Try another transcript</Link>
+      </Shell>
+    );
+  }
+
+  /* ---------------- report ---------------- */
+
+  const bandColor = BAND_HEX[result.band] ?? '#57534E';
+  const fabricated = result.evidence_check.total - result.evidence_check.verified;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 font-sans selection:bg-indigo-500 selection:text-white">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <Link href="/" className="text-sm text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1 transition-colors">
-            ← Back to Evaluations Dashboard
-          </Link>
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1 text-white">Call Intelligence &amp; Rubric Scorecard</h1>
-        </div>
-        <div className="flex flex-col items-start sm:items-end gap-2">
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isDownloading ? 'Generating PDF…' : 'Download PDF report'}
-          </button>
-          {pdfError && <p className="text-xs text-rose-400">{pdfError}</p>}
-        </div>
-      </div>
+    <main className="min-h-screen bg-white text-stone-900">
+      <div className="max-w-3xl mx-auto px-6 pb-24">
 
-      {/* ---------------- on-screen card ---------------- */}
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-800/80 pb-6">
-            <div>
-              <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full uppercase tracking-wider">
-                Session audit review
-              </span>
-              <div className="mt-3">
-                <label className="sr-only" htmlFor="client-title">Client name</label>
-                <input
-                  id="client-title"
-                  type="text"
-                  value={client}
-                  onChange={(e) => setClient(e.target.value)}
-                  className="text-2xl sm:text-3xl font-bold bg-transparent border-b border-transparent hover:border-slate-700 focus:border-indigo-500 focus:outline-none transition-colors text-white w-full"
-                />
-              </div>
-              <p className="text-sm text-slate-400 mt-1">{dateLabel}</p>
-            </div>
-
-            <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
-              <div className="relative flex items-center justify-center">
-                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                  <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" className="text-slate-800 fill-none" />
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    strokeWidth="6"
-                    className="text-indigo-500 fill-none"
-                    strokeDasharray={175.9}
-                    strokeDashoffset={175.9 - (175.9 * evalData.overallPercentage) / 100}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute text-sm font-bold text-white">{evalData.overallPercentage}%</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-400 font-medium">Overall execution</div>
-                <div className={`text-sm font-semibold mt-0.5 ${DOT[overallTone]}`}>● {VERDICT[overallTone]}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
-            <div>
-              <label htmlFor="f-coach" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Coach name</label>
-              <input id="f-coach" type="text" value={coach} onChange={(e) => setCoach(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
-            </div>
-            <div>
-              <label htmlFor="f-client" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Client name</label>
-              <input id="f-client" type="text" value={client} onChange={(e) => setClient(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
-            </div>
-            <div>
-              <label htmlFor="f-program" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Program track</label>
-              <input id="f-program" type="text" value={program} onChange={(e) => setProgram(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
-            </div>
-            <div>
-              <label htmlFor="f-type" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Call type</label>
-              <select id="f-type" value={callType} onChange={(e) => setCallType(e.target.value as 'Coaching Call' | 'Kickoff Call')}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
-                <option value="Coaching Call">Coaching Call</option>
-                <option value="Kickoff Call">Kickoff Call</option>
-              </select>
-            </div>
+        <div className="flex items-center justify-between py-5 border-b border-stone-200">
+          <Link href="/" className="text-sm text-stone-500 hover:text-stone-900">All runs</Link>
+          <div className="flex items-center gap-4">
+            <button onClick={downloadPDF} disabled={pdfBusy} className="text-sm text-stone-500 hover:text-stone-900 disabled:opacity-40">
+              {pdfBusy ? 'Preparing…' : 'Download PDF'}
+            </button>
+            <button onClick={() => { navigator.clipboard.writeText(window.location.href); setToast('Link copied'); }} className="text-sm text-stone-500 hover:text-stone-900">
+              Share link
+            </button>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-lg font-bold text-white mb-2">Transcript summary</h2>
-          <p className="text-sm text-slate-300 leading-relaxed bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl">
-            {evalData.transcriptSummary}
-          </p>
+        {/* score */}
+        <header className="pt-14 pb-10">
+          <p className="text-xs uppercase tracking-[0.18em] text-stone-400">{spec?.label}</p>
+          <div className="flex items-end gap-6 mt-5">
+            <div className="text-[76px] leading-none font-medium tracking-tight tabular-nums" style={{ color: bandColor }}>
+              {Math.round(result.percentage)}
+            </div>
+            <div className="pb-3">
+              <div className="text-sm font-medium tracking-wide" style={{ color: bandColor }}>{result.band}</div>
+              <div className="text-xs text-stone-400 font-mono mt-1">{result.raw_score} of {result.max_possible} points</div>
+            </div>
+          </div>
+          <div className="h-px bg-stone-200 mt-6 relative">
+            <div className="absolute inset-y-0 left-0" style={{ width: `${result.percentage}%`, height: '2px', top: '-0.5px', background: bandColor }} />
+          </div>
+          <p className="mt-4 text-sm text-stone-500 max-w-lg">{result.band_blurb}</p>
+        </header>
+
+        {/* metadata fields */}
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-10 border-b border-stone-200">
+          <Field label="Coach" value={coach} onChange={setCoach} />
+          <Field label="Client" value={client} onChange={setClient} />
+          <Field label="Program" value={program} onChange={setProgram} />
+          <div className="sm:col-span-3">
+            <button onClick={saveFields} disabled={saving} className="text-xs text-stone-500 hover:text-stone-900 disabled:opacity-40">
+              {saving ? 'Saving…' : 'Save details'}
+            </button>
+          </div>
+        </section>
+
+        {/* evidence integrity */}
+        <div className="flex items-center gap-2 py-4 text-xs border-b border-stone-200">
+          <span className={`w-1.5 h-1.5 rounded-full ${fabricated === 0 ? 'bg-emerald-600' : 'bg-red-600'}`} />
+          <span className="text-stone-500">
+            {result.evidence_check.verified} of {result.evidence_check.total} quoted lines found verbatim in the transcript
+            {fabricated > 0 && <span className="text-red-700 font-medium"> — {fabricated} could not be located</span>}
+          </span>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">Full evaluation rubric</h2>
-          <div className="grid grid-cols-1 gap-4">
-            {evalData.criteria.map((item, idx) => {
-              const tone = toneOf((item.score / item.maxScore) * 100);
+        {/* caps */}
+        {result.caps_fired.length > 0 && (
+          <section className="py-8 border-b border-stone-200">
+            <h2 className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-4">Caps applied</h2>
+            {result.caps_fired.map((c) => {
+              const cap = spec?.caps.find((x) => x.id === c.id);
               return (
-                <div key={item.name} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
-                    <div>
-                      <span className="text-xs font-mono text-indigo-400 tracking-wider">CRITERIA #{idx + 1}</span>
-                      <h3 className="text-base font-bold text-white mt-0.5">{item.name}</h3>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold border shrink-0 ${BADGE[tone]}`}>
-                      Score: {item.score} / {item.maxScore}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
-                    <div className="bg-slate-950/50 border border-slate-800/80 p-3.5 rounded-xl">
-                      <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Verified evidence</span>
-                      <p className="text-slate-300">{item.evidence}</p>
-                    </div>
-                    <div className="bg-indigo-950/20 border border-indigo-900/40 p-3.5 rounded-xl">
-                      <span className="block text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">Quick fix to reach max score</span>
-                      <p className="text-indigo-200/90">{item.quickFix}</p>
-                    </div>
-                  </div>
+                <div key={c.id} className="py-3 border-l-2 border-amber-500 pl-4 mb-2">
+                  <div className="text-sm font-medium">{cap?.condition ?? c.id}</div>
+                  <div className="text-sm text-stone-500 mt-0.5">{c.explanation}</div>
                 </div>
               );
             })}
-          </div>
-        </div>
+          </section>
+        )}
+
+        {/* the one thing */}
+        <section className="py-10 border-b border-stone-200">
+          <h2 className="text-xs uppercase tracking-[0.18em] text-stone-400">The one thing</h2>
+          <p className="text-xl leading-snug mt-4 max-w-xl">{result.the_one_thing.change}</p>
+          <p className="text-sm text-stone-500 mt-3 max-w-xl">{result.the_one_thing.why}</p>
+          <p className="text-sm mt-4">
+            <span className="text-stone-400">This call would have scored </span>
+            <span className="font-medium tabular-nums">{Math.round(result.the_one_thing.score_with_it)}</span>
+            <span className="text-stone-400"> with that change alone.</span>
+          </p>
+        </section>
+
+        {/* brief */}
+        <section className="py-10 border-b border-stone-200">
+          <h2 className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-4">The brief</h2>
+          <p className="text-[15px] leading-relaxed text-stone-700 max-w-xl whitespace-pre-line">{result.brief}</p>
+        </section>
+
+        {/* red flags */}
+        {result.red_flags.length > 0 && (
+          <section className="py-10 border-b border-stone-200">
+            <h2 className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-4">Red flags</h2>
+            {result.red_flags.map((f, i) => (
+              <div key={i} className="py-3 flex gap-4">
+                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.severity === 'high' ? 'bg-red-600' : f.severity === 'medium' ? 'bg-amber-500' : 'bg-stone-400'}`} />
+                <div>
+                  <div className="text-sm font-medium">{f.flag}</div>
+                  <div className="text-sm text-stone-500 mt-0.5">{f.why}</div>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* dimensions */}
+        <section className="pt-10">
+          <h2 className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-2">Twelve dimensions</h2>
+
+          {spec?.dimensions.map((d) => {
+            const dim = result.dimensions.find((x) => x.id === d.id);
+            if (!dim) return null;
+            const isOpen = open === d.id;
+            const pctOf = dim.disabled || dim.score === null ? 0 : (dim.score / d.points) * 100;
+
+            return (
+              <div key={d.id} className="border-b border-stone-200">
+                <button onClick={() => setOpen(isOpen ? null : d.id)} className="w-full flex items-center gap-4 py-4 text-left group">
+                  <span className={`text-[15px] flex-1 ${isOpen ? 'text-stone-900' : 'text-stone-600 group-hover:text-stone-900'}`}>
+                    {d.name}
+                  </span>
+
+                  {dim.disabled ? (
+                    <span className="text-xs text-stone-400 font-mono">N/A</span>
+                  ) : (
+                    <>
+                      <span className="hidden sm:block w-24 h-px bg-stone-200 relative">
+                        <span className="absolute left-0 top-0 h-[2px] -mt-[0.5px]" style={{ width: `${pctOf}%`, background: toneHex(pctOf) }} />
+                      </span>
+                      <span className="tabular-nums text-[15px] w-14 text-right">
+                        {dim.score}<span className="text-stone-400 text-xs">/{d.points}</span>
+                      </span>
+                    </>
+                  )}
+                  <span className={`text-stone-300 text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                </button>
+
+                {isOpen && (
+                  <div className="pb-8 pl-0 sm:pl-1 space-y-6">
+                    {dim.disabled && (
+                      <p className="text-sm text-stone-500 italic">{dim.disabled_reason || 'Not applicable to this call.'}</p>
+                    )}
+
+                    {!dim.disabled && (
+                      <>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-stone-400 mb-2">Reasoning</p>
+                          <p className="text-sm leading-relaxed text-stone-700 max-w-xl">{dim.reasoning}</p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-stone-400 mb-2">Evidence</p>
+                          {dim.evidence_absent || dim.evidence.length === 0 ? (
+                            <p className="text-sm text-stone-500 italic">
+                              This behaviour does not appear in the transcript. Scored on its absence, not inferred from the rest of the call.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {dim.evidence.map((q, i) => (
+                                <p key={i} className="text-sm text-stone-700 font-mono leading-relaxed border-l-2 border-stone-300 pl-3 py-0.5">
+                                  {q}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-stone-400 mb-2">
+                            Quick fix — to reach {d.points}/{d.points}
+                          </p>
+                          <p className="text-sm leading-relaxed text-stone-700 max-w-xl">{dim.quick_fix}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </section>
       </div>
 
-      {/* ---------------- off-screen print sheet ----------------
-          Every colour here is a literal hex and every layout value is an
-          inline style. No Tailwind classes, because Tailwind v4 compiles
-          its palette to oklch() and its /opacity modifiers to color-mix(),
-          neither of which html2canvas can rasterise. Kept white so the
-          exported document is printable. */}
-      <div
-        id="printable-report-card"
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: '-10000px',
-          top: 0,
-          width: '880px',
-          background: '#ffffff',
-          color: '#111827',
-          padding: '8px',
-          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-          fontSize: '13px',
-          lineHeight: 1.6,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', paddingBottom: '16px', borderBottom: '2px solid #111827' }}>
+      {/* print sheet — plain hex only, html2canvas cannot parse oklch */}
+      <div id="print-sheet" aria-hidden style={{ position: 'absolute', left: '-10000px', top: 0, width: '860px', background: '#fff', color: '#1C1917', fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: '13px', lineHeight: 1.6, padding: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: '16px', borderBottom: '2px solid #1C1917' }}>
           <div>
-            <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280' }}>Session audit review</div>
-            <div style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0' }}>{client}</div>
-            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-              {coach} · {program} · {callType} · {dateLabel}
+            <div style={{ fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#78716C' }}>{spec?.label}</div>
+            <div style={{ fontSize: '23px', fontWeight: 600, marginTop: '6px' }}>{client || 'Client'}</div>
+            <div style={{ fontSize: '12px', color: '#78716C', marginTop: '3px' }}>
+              {[coach, program].filter(Boolean).join(' · ')}
             </div>
           </div>
-          <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-            <div style={{ fontSize: '38px', fontWeight: 700, lineHeight: 1, color: HEX[overallTone] }}>{evalData.overallPercentage}%</div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px' }}>{VERDICT[overallTone]}</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '40px', fontWeight: 600, lineHeight: 1, color: bandColor }}>{Math.round(result.percentage)}</div>
+            <div style={{ fontSize: '11px', color: bandColor, marginTop: '5px', letterSpacing: '0.06em' }}>{result.band}</div>
+            <div style={{ fontSize: '10px', color: '#A8A29E', marginTop: '2px' }}>{result.raw_score} / {result.max_possible} pts</div>
           </div>
         </div>
 
-        <div style={{ margin: '20px 0 24px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280', marginBottom: '6px' }}>Transcript summary</div>
-          <p style={{ margin: 0, fontSize: '12.5px', color: '#374151' }}>{evalData.transcriptSummary}</p>
+        <div style={{ margin: '22px 0', padding: '14px 16px', background: '#FAFAF9', borderLeft: '3px solid #1C1917' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#78716C', marginBottom: '5px' }}>The one thing</div>
+          <div style={{ fontSize: '14px', fontWeight: 600 }}>{result.the_one_thing.change}</div>
+          <div style={{ fontSize: '12px', color: '#57534E', marginTop: '5px' }}>{result.the_one_thing.why}</div>
+          <div style={{ fontSize: '12px', marginTop: '7px' }}>Would have scored <strong>{Math.round(result.the_one_thing.score_with_it)}</strong> with this change alone.</div>
         </div>
 
-        <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280', marginBottom: '10px' }}>Rubric breakdown</div>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#78716C', marginBottom: '6px' }}>The brief</div>
+          <div style={{ fontSize: '12.5px', color: '#44403C', whiteSpace: 'pre-line' }}>{result.brief}</div>
+        </div>
 
-        {evalData.criteria.map((item, idx) => {
-          const tone = toneOf((item.score / item.maxScore) * 100);
+        {result.red_flags.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#78716C', marginBottom: '6px' }}>Red flags</div>
+            {result.red_flags.map((f, i) => (
+              <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid #E7E5E4' }}>
+                <strong style={{ fontSize: '12.5px' }}>{f.flag}</strong>
+                <span style={{ fontSize: '10px', color: '#78716C', marginLeft: '8px', textTransform: 'uppercase' }}>{f.severity}</span>
+                <div style={{ fontSize: '12px', color: '#57534E' }}>{f.why}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#78716C', marginBottom: '8px' }}>Twelve dimensions</div>
+        {spec?.dimensions.map((d) => {
+          const dim = result.dimensions.find((x) => x.id === d.id);
+          if (!dim) return null;
           return (
-            <div key={item.name} style={{ padding: '12px 0', borderBottom: '1px solid #E5E7EB', breakInside: 'avoid' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '16px' }}>
-                <div style={{ fontSize: '13.5px', fontWeight: 600 }}>{idx + 1}. {item.name}</div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: HEX[tone], whiteSpace: 'nowrap' }}>{item.score} / {item.maxScore}</div>
+            <div key={d.id} style={{ padding: '11px 0', borderBottom: '1px solid #E7E5E4', breakInside: 'avoid' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                <strong style={{ fontSize: '13px' }}>D{d.n} · {d.name}</strong>
+                <span style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', color: dim.disabled ? '#A8A29E' : toneHex(((dim.score ?? 0) / d.points) * 100) }}>
+                  {dim.disabled ? 'N/A' : `${dim.score} / ${d.points}`}
+                </span>
               </div>
-              <div style={{ marginTop: '6px', fontSize: '12px', color: '#374151' }}>
-                <strong style={{ fontWeight: 600 }}>Evidence.</strong> {item.evidence}
-              </div>
-              <div style={{ marginTop: '3px', fontSize: '12px', color: '#4B5563' }}>
-                <strong style={{ fontWeight: 600 }}>Quick fix.</strong> {item.quickFix}
-              </div>
+              {dim.disabled ? (
+                <div style={{ fontSize: '12px', color: '#78716C', marginTop: '4px', fontStyle: 'italic' }}>{dim.disabled_reason}</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '12px', color: '#44403C', marginTop: '5px' }}>{dim.reasoning}</div>
+                  {dim.evidence_absent || dim.evidence.length === 0 ? (
+                    <div style={{ fontSize: '11.5px', color: '#78716C', marginTop: '5px', fontStyle: 'italic' }}>Not present in the transcript.</div>
+                  ) : (
+                    dim.evidence.map((q, i) => (
+                      <div key={i} style={{ fontSize: '11.5px', color: '#57534E', marginTop: '4px', paddingLeft: '10px', borderLeft: '2px solid #D6D3D1' }}>{q}</div>
+                    ))
+                  )}
+                  <div style={{ fontSize: '11.5px', color: '#44403C', marginTop: '6px' }}>
+                    <strong>Quick fix.</strong> {dim.quick_fix}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
 
-        <div style={{ marginTop: '22px', paddingTop: '10px', borderTop: '1px solid #E5E7EB', fontSize: '10.5px', color: '#9CA3AF' }}>
-          Evaluation {evalData.id} · generated {new Date().toLocaleDateString()}
+        <div style={{ marginTop: '20px', paddingTop: '10px', borderTop: '1px solid #E7E5E4', fontSize: '10px', color: '#A8A29E' }}>
+          Run {id.slice(0, 8)} · {result.evidence_check.verified}/{result.evidence_check.total} quotes verified against the transcript
         </div>
       </div>
-    </div>
+
+      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-sm px-4 py-2 rounded">{toast}</div>}
+    </main>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  return <main className="min-h-screen bg-white text-stone-900"><div className="max-w-3xl mx-auto px-6 py-24">{children}</div></main>;
+}
+
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <span className="block text-xs uppercase tracking-[0.14em] text-stone-400 mb-1.5">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`Add ${label.toLowerCase()}`}
+        className="w-full text-[15px] bg-transparent border-b border-stone-200 pb-1.5 focus:outline-none focus:border-stone-900 placeholder:text-stone-300"
+      />
+    </label>
   );
 }

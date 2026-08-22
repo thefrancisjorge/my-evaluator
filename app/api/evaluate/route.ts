@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from 'next/server';
-import { evaluateCall } from '../../../llm';
-import { supabase } from '../../../supabase';
+import { evaluateCall } from '@/lib/llm';import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
