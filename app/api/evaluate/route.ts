@@ -32,7 +32,11 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json(evaluationResult);
+    const outputText = typeof evaluationResult === 'string' 
+      ? evaluationResult 
+      : (evaluationResult as any)?.rawOutput || JSON.stringify(evaluationResult);
+
+    return NextResponse.json({ rawOutput: outputText });
   } catch (error: any) {
     console.error('Evaluation Route Error:', error);
     return NextResponse.json(

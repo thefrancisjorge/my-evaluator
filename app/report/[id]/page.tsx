@@ -7,7 +7,7 @@ export default function HomePage() {
   const [callType, setCallType] = useState('Inbound Sales');
   const [transcript, setTranscript] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<string>('');
   const [error, setError] = useState('');
 
   const handleEvaluate = async () => {
@@ -18,7 +18,7 @@ export default function HomePage() {
 
     setLoading(true);
     setError('');
-    setResult(null);
+    setResult('');
 
     try {
       const response = await fetch('/api/evaluate', {
@@ -33,7 +33,14 @@ export default function HomePage() {
         throw new Error(data.error || 'Failed to evaluate call');
       }
 
-      setResult(data);
+      // Safe extraction whether data is string or object
+      if (typeof data === 'string') {
+        setResult(data);
+      } else if (data.rawOutput) {
+        setResult(data.rawOutput);
+      } else {
+        setResult(JSON.stringify(data, null, 2));
+      }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
@@ -90,9 +97,9 @@ export default function HomePage() {
         </div>
       )}
 
-      {result && result.rawOutput && (
+      {result && (
         <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <ReactMarkdown>{result.rawOutput}</ReactMarkdown>
+          <ReactMarkdown>{result}</ReactMarkdown>
         </div>
       )}
     </main>
