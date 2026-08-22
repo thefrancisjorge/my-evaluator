@@ -30,7 +30,7 @@ export async function POST(req: Request) {
           {
             call_type: callType,
             transcript: transcript,
-            report: markdownOutput, // Siguraduhing 'report' ang pangalan ng column sa table mo
+            report: markdownOutput,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Ibalik sa frontend bilang rawOutput
-    return NextResponse.json({ rawOutput: markdownOutput });
+    // 3. Ibalik sa frontend bilang report
+    return NextResponse.json({ report: markdownOutput });
     
   } catch (error: any) {
     console.error('Evaluation Route Error:', error);
