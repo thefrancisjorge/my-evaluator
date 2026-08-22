@@ -37,8 +37,9 @@ export default function EvaluationDetailPage() {
   }, [id]);
 
   const handleCopy = () => {
-    if (report && report.report) {
-      navigator.clipboard.writeText(report.report);
+    // Pinalitan mula report.report patungong report.report_json
+    if (report && report.report_json) {
+      navigator.clipboard.writeText(report.report_json);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -58,7 +59,6 @@ export default function EvaluationDetailPage() {
 
       if (error) throw error;
 
-      // Bumalik sa home page matapos ma-delete
       router.push('/');
     } catch (err: any) {
       console.error('Error deleting report:', err);
@@ -112,7 +112,8 @@ export default function EvaluationDetailPage() {
       <p style={{ color: '#888' }}>Date: {new Date(report.created_at).toLocaleString()}</p>
       
       <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff' }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.report}</ReactMarkdown>
+        {/* Pinalitan din dito para basahin ang report_json */}
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.report_json}</ReactMarkdown>
       </div>
     </main>
   );
