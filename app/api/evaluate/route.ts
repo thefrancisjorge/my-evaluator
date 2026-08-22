@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from 'next/server';
-import { evaluateCall } from '@/lib/llm';import { supabase } from '@/lib/supabase';
+import { evaluateCall } from '@/lib/llm';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
-    const { transcript, callType } = await req.json();
+    const { transcript, callType, coach, client, program } = await req.json();
 
     if (!transcript || !callType) {
       return NextResponse.json(
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
+    let insertedId = null;
+
     // I-save sa Supabase
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
@@ -26,14 +29,19 @@ export async function POST(req: Request) {
           {
             call_type: callType,
             transcript: transcript,
-            report_json: markdownOutput, // Kung jsonb ang column, i-try din natin i-wrap sa JSON object kung magka-error
+            coach: coach || null,
+            client: client || null,
+            program: program || null,
+            result: markdownOutput,
+            status: 'done',
             created_at: new Date().toISOString(),
           },
-        ]);
+        ]).select('id').single();
         
         if (dbError) {
           console.error('Supabase insert error details:', JSON.stringify(dbError, null, 2));
-        } else {
+        } else if (data) {
+          insertedId = data.id;
           console.log('Successfully saved to Supabase:', data);
         }
       } catch (dbError) {
@@ -43,7 +51,7 @@ export async function POST(req: Request) {
       console.warn('Supabase environment variables are missing on the server!');
     }
 
-    return NextResponse.json({ report: markdownOutput });
+    return NextResponse.json({ id: insertedId, report: markdownOutput });
     
   } catch (error: any) {
     console.error('Evaluation Route Error:', error);
