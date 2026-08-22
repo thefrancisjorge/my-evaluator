@@ -29,23 +29,9 @@ CRITICAL RULES:
 1. Every evidence quote MUST be an exact, word-for-word string match from the transcript.
 2. Include the 1-based "lineStart" index where the quote appears in the transcript.
 3. If the dimension was not demonstrated, set "notEvidenced" to true, score to 0, and leave "evidence" as [].
-4. Output ONLY a valid JSON object matching this structure:
-{
-  "dimensionId": "empathy_and_rapport",
-  "score": 5,
-  "reasoning": "Explain reasoning here",
-  "evidence": [
-    {
-      "quote": "Exact string match",
-      "lineStart": 2
-    }
-  ],
-  "quickFix": "Actionable advice",
-  "notEvidenced": false
-}
+4. Output ONLY a valid JSON object.
 `;
 
-  // Retries up to 3 times on API failure with exponential backoff
   return pRetry(
     async () => {
       const response = await ai.models.generateContent({
@@ -63,13 +49,37 @@ CRITICAL RULES:
       const rawJson = JSON.parse(responseText);
       return DimensionEvaluationSchema.parse(rawJson);
     },
-    {
-      retries: 3,
-      onFailedAttempt: (error) => {
-        console.warn(
-          `⚠️ Call attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries remaining.`
-        );
-      },
-    }
+    { retries: 3 }
+  );
+}
+
+export async function evaluateOverallSummary(transcript: string, callType: string) {
+  const prompt = `
+You are an executive quality assurance evaluator for Bievermind ${callType} calls.
+Analyze the transcript and produce the top-level report metadata.
+
+TRANSCRIPT:
+${transcript}
+
+Output ONLY a JSON object with this structure:
+{
+  "theOneThing": "The single change that moves the number most and impact on score",
+  "theBrief": "A few sentences on how the call went written to the coach",
+  "redFlags": "What puts this client at risk of leaving and why",
+  "gradeBand": "Select exactly one: Elite | Strong | Inconsistent | At risk | Fail",
+  "finalScore": 85
+}
+`;
+
+  return pRetry(
+    async () => {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: { responseMimeType: "application/json", temperature: 0 },
+      });
+      return JSON.parse(response.text || "{}");
+    },
+    { retries: 3 }
   );
 }

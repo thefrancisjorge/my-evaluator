@@ -14,12 +14,24 @@
     "@anthropic-ai/sdk": "^0.120.0",
     "@google/genai": "^2.18.0",
     "@google/generative-ai": "^0.24.1",
-    "@types/node": "^26.2.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
     "dotenv": "^17.4.2",
+    "html2pdf.js": "^0.14.0",
+    "lucide-react": "^1.33.0",
+    "next": "^16.3.2",
     "p-limit": "^7.3.1",
     "p-retry": "^8.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "ts-node": "^10.9.2",
     "typescript": "^7.0.2",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/html2pdf.js": "^0.10.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4"
   }
 }
