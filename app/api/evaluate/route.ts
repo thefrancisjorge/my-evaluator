@@ -9,28 +9,35 @@ export async function POST(req: Request) {
     const { transcript, callType } = await req.json();
 
     if (!transcript || !callType) {
-      return NextResponse.json({ error: 'Missing transcript or call type' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing transcript or callType parameter.' },
+        { status: 400 }
+      );
     }
 
-    const mockReport = {
-      gradeBand: 'Good',
-      finalScore: 85,
-      theOneThing: 'Improve objection handling during price presentation.',
-      theBrief: 'The coach maintained good rapport but missed closing signals.',
-      redFlags: 'Client expressed confusion about timeline.',
-      evaluations: []
-    };
+    const evaluationResult = await evaluateCall(transcript, callType);
 
-    const { data, error } = await supabase
-      .from('evaluations')
-      .insert([{ call_type: callType, transcript, report_json: mockReport }])
-      .select()
-      .single();
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      try {
+        await supabase.from('evaluations').insert([
+          {
+            call_type: callType,
+            transcript,
+            result: evaluationResult,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } catch (dbError) {
+        console.error('Supabase save error:', dbError);
+      }
+    }
 
-    if (error) throw error;
-
-    return NextResponse.json({ id: data.id, report: mockReport });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Evaluation error' }, { status: 500 });
+    return NextResponse.json(evaluationResult);
+  } catch (error: any) {
+    console.error('Evaluation Route Error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
