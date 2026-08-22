@@ -24,12 +24,12 @@ export async function POST(req: Request) {
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // Tanggalin muna ang coach, client, program kung wala pa sa DB schema
+    // Ipinapasa natin sa 'report_json' ang resulta para sumunod sa database constraint mo
     const { data, error: dbError } = await supabaseAdmin.from('evaluations').insert([
       {
         call_type: callType,
         transcript: transcript,
-        result: markdownOutput,
+        report_json: markdownOutput, 
         status: 'done',
       },
     ]).select('id').single();
