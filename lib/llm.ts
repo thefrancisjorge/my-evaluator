@@ -6,7 +6,7 @@ import { RUBRIC, type CallType, activeMax, normalise, bandFor, validateScores } 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) console.error('GEMINI_API_KEY is not set.');
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 export const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
