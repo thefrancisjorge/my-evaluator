@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
 import { evaluateCall } from '@/lib/llm';
 import { supabase } from '@/lib/supabase';
+import crypto from 'crypto';
 
 export async function POST(req: Request) {
   try {
@@ -15,42 +16,40 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1. I-run ang AI evaluation
     const evaluationResult = await evaluateCall(transcript, callType);
     const markdownOutput = typeof evaluationResult === 'string' 
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    let insertedId = null;
+    // Gumawa muna ng random UUID kung sakaling hindi pumasok sa database
+    let insertedId = crypto.randomUUID();
 
-    // I-save sa Supabase
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { data, error: dbError } = await supabase.from('evaluations').insert([
-          {
-            call_type: callType,
-            transcript: transcript,
-            coach: coach || null,
-            client: client || null,
-            program: program || null,
-            result: markdownOutput,
-            status: 'done',
-            created_at: new Date().toISOString(),
-          },
-        ]).select('id').single();
-        
-        if (dbError) {
-          console.error('Supabase insert error details:', JSON.stringify(dbError, null, 2));
-        } else if (data) {
-          insertedId = data.id;
-          console.log('Successfully saved to Supabase:', data);
-        }
-      } catch (dbError) {
-        console.error('Supabase connection error:', dbError);
+    // 2. Subukang i-save sa Supabase kung gumagana
+    try {
+      const { data, error: dbError } = await supabase.from('evaluations').insert([
+        {
+          id: insertedId, // I-pilit natin gamitin ang UUID na ito
+          call_type: callType,
+          transcript: transcript,
+          coach: coach || null,
+          client: client || null,
+          program: program || null,
+          result: markdownOutput,
+          status: 'done',
+        },
+      ]).select('id').single();
+      
+      if (dbError) {
+        console.error('Supabase insert warning (falling back to generated ID):', dbError);
+      } else if (data?.id) {
+        insertedId = data.id;
       }
-    } else {
-      console.warn('Supabase environment variables are missing on the server!');
+    } catch (dbError) {
+      console.error('Supabase connection exception:', dbError);
     }
 
+    // Siguraduhing may maibabalik na ID anumang mangyari
     return NextResponse.json({ id: insertedId, report: markdownOutput });
     
   } catch (error: any) {
