@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function HomePage() {
   const [callType, setCallType] = useState('Inbound Sales');
@@ -106,7 +107,7 @@ export default function HomePage() {
 
       {result && (
         <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <ReactMarkdown>{result}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
         </div>
       )}
     </main>
