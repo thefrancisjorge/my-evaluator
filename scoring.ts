@@ -1,4 +1,4 @@
-import type { DimensionEval } from "./types";
+import type { DimensionEvaluation } from "./types";
 
 export interface ScoreBreakdown {
   rawTotalPoints: number;
@@ -6,7 +6,7 @@ export interface ScoreBreakdown {
   finalPercentageScore: number;
 }
 
-export function calculateNormalizedScore(evaluations: DimensionEval[]): ScoreBreakdown {
+export function calculateNormalizedScore(evaluations: DimensionEvaluation[]): ScoreBreakdown {
   let rawTotalPoints = 0;
   let maxPossiblePoints = 0;
 
