@@ -3,8 +3,8 @@ dotenv.config();
 
 import { GoogleGenAI } from "@google/genai";
 import pRetry from "p-retry";
-import { DimensionEvaluationSchema } from "./types.js";
-import type { DimensionEvaluation } from "./types.js";
+import { DimensionEvaluationSchema } from "./types";
+import type { DimensionEvaluation } from "./types";
 
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 if (!apiKey) throw new Error("Missing GEMINI_API_KEY in .env file");
@@ -82,4 +82,9 @@ Output ONLY a JSON object with this structure:
     },
     { retries: 3 }
   );
+}
+
+// Added export to support app/api/evaluate/route.ts
+export async function evaluateCall(transcript: string, callType: string) {
+  return await evaluateOverallSummary(transcript, callType);
 }
