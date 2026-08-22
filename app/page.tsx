@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { supabase } from '../supabase';
 
 export default function HomePage() {
   const [callType, setCallType] = useState('Inbound Sales');
@@ -10,6 +11,27 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>('');
   const [error, setError] = useState('');
+  const [history, setHistory] = useState<any[]>([]);
+
+  // Function para kunin ang evaluation history mula sa Supabase
+  const fetchHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('evaluations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (data) setHistory(data);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    }
+  };
+
+  // I-load ang history sa unang bukas ng page
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const handleEvaluate = async () => {
     if (!transcript.trim()) {
@@ -28,27 +50,26 @@ export default function HomePage() {
         body: JSON.stringify({ callType, transcript }),
       });
 
-      let data = await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to evaluate call');
       }
 
-      // Kung exact JSON string ang natanggap mula sa API, i-parse muna ito
+      // Kuhanin nang direkta ang rawOutput string mula sa JSON response
+      let cleanResult = '';
       if (typeof data === 'string') {
-        try {
-          data = JSON.parse(data);
-        } catch (e) {
-          // Manatiling string kung hindi parsable bilang JSON
-        }
+        cleanResult = data;
+      } else if (data && typeof data.rawOutput === 'string') {
+        cleanResult = data.rawOutput;
+      } else {
+        cleanResult = String(data);
       }
 
-      // Kuhanin ang malinis na rawOutput text string
-      const cleanMarkdown = typeof data === 'object' && data.rawOutput 
-        ? data.rawOutput 
-        : (typeof data === 'string' ? data : JSON.stringify(data));
+      setResult(cleanResult);
 
-      setResult(cleanMarkdown);
+      // I-refresh ang history list pagka-evaluate
+      fetchHistory();
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
@@ -110,6 +131,28 @@ export default function HomePage() {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
         </div>
       )}
+
+      {/* History Section */}
+      <div style={{ marginTop: '4rem', borderTop: '2px solid #eaeaea', paddingTop: '2rem' }}>
+        <h2>Recent Evaluations</h2>
+        {history.length === 0 ? (
+          <p style={{ color: '#666' }}>No history records found yet.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {history.map((item) => (
+              <li key={item.id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #eaeaea', borderRadius: '6px', backgroundColor: '#fafafa' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <strong>{item.call_type}</strong>
+                  <small style={{ color: '#888' }}>{new Date(item.created_at).toLocaleString()}</small>
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.report}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </main>
   );
 }

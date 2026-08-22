@@ -15,28 +15,35 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1. Kuhanin ang evaluation result (dapat ito ay string na Markdown)
     const evaluationResult = await evaluateCall(transcript, callType);
 
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    // Siguraduhing string ito
+    const markdownOutput = typeof evaluationResult === 'string' 
+      ? evaluationResult 
+      : JSON.stringify(evaluationResult);
+
+    // 2. I-save sa Supabase
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
-        await supabase.from('evaluations').insert([
+        const { error: dbError } = await supabase.from('evaluations').insert([
           {
             call_type: callType,
-            transcript,
-            result: evaluationResult,
+            transcript: transcript,
+            report: markdownOutput, // Siguraduhing 'report' ang pangalan ng column sa table mo
             created_at: new Date().toISOString(),
           },
         ]);
+        
+        if (dbError) console.error('Supabase insert error:', dbError);
       } catch (dbError) {
-        console.error('Supabase save error:', dbError);
+        console.error('Supabase connection error:', dbError);
       }
     }
 
-    const outputText = typeof evaluationResult === 'string' 
-      ? evaluationResult 
-      : (evaluationResult as any)?.rawOutput || JSON.stringify(evaluationResult);
-
-    return NextResponse.json({ rawOutput: outputText });
+    // 3. Ibalik sa frontend bilang rawOutput
+    return NextResponse.json({ rawOutput: markdownOutput });
+    
   } catch (error: any) {
     console.error('Evaluation Route Error:', error);
     return NextResponse.json(
