@@ -23,14 +23,14 @@ export async function POST(req: Request) {
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // 2. I-save sa Supabase
+    // 2. I-save sa Supabase gamit ang tamang 'report_json' column name
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const { error: dbError } = await supabase.from('evaluations').insert([
           {
             call_type: callType,
             transcript: transcript,
-            report: markdownOutput,
+            report_json: markdownOutput, // Naka-match na sa Supabase table schema mo
             created_at: new Date().toISOString(),
           },
         ]);
