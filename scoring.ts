@@ -1,4 +1,4 @@
-import type { DimensionEval } from "./types.js";
+import type { DimensionEval } from "./types";
 
 export interface ScoreBreakdown {
   rawTotalPoints: number;

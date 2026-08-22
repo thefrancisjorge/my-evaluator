@@ -1,5 +1,5 @@
-import { DimensionEvaluationSchema } from "./types.js";
-import type { DimensionEvaluation } from "./types.js";
+import { DimensionEvaluationSchema } from "./types";
+import type { DimensionEvaluation } from "./types";
 
 export function verifyQuoteWithLine(
   transcript: string,
@@ -44,7 +44,7 @@ export function verifyEvaluationPayload(
   if (!parseResult.success) {
     return {
       isValid: false,
-      errors: parseResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`),
+      errors: parseResult.error.issues.map((e) => `${e.path.join(".")}: ${e.message}`),
     };
   }
 
