@@ -454,11 +454,16 @@ const lightThemeCSS = `
 
 .metadata-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
   margin-bottom: 32px;
   padding-bottom: 32px;
   border-bottom: 1px solid #e2e8f0;
+}
+.input-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 .input-group label {
   display: block;
@@ -476,6 +481,7 @@ const lightThemeCSS = `
   color: #0f172a;
   font-size: 14px;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 .input-group input:focus {
   outline: none;
