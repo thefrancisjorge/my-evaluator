@@ -6,4 +6,4 @@ node_modules/
 
 # OS / Build files
 .DS_Store
-dist/
+dist/tsconfig.tsbuildinfo
