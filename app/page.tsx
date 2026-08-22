@@ -6,8 +6,12 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { RUBRIC, type CallType } from '@/lib/rubrics';
 
-const BAND_HEX: Record<string, string> = {
-  ELITE: '#1B7A5A', STRONG: '#2F6FA8', INCONSISTENT: '#A8761B', 'AT RISK': '#B8531F', FAIL: '#A32F2F',
+const BAND_STYLE: Record<string, { text: string; ring: string; chip: string }> = {
+  ELITE: { text: 'text-emerald-400', ring: '#34D399', chip: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  STRONG: { text: 'text-sky-400', ring: '#38BDF8', chip: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
+  INCONSISTENT: { text: 'text-amber-400', ring: '#FBBF24', chip: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  'AT RISK': { text: 'text-orange-400', ring: '#FB923C', chip: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+  FAIL: { text: 'text-rose-400', ring: '#FB7185', chip: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
 };
 
 interface HistoryRow {
@@ -48,12 +52,6 @@ export default function HomePage() {
     })();
   }, []);
 
-  const readFile = async (file: File) => {
-    const text = await file.text();
-    setTranscript(text);
-    setError(null);
-  };
-
   const submit = async () => {
     if (transcript.trim().length < 200) {
       setError('That transcript looks too short to score. Paste the whole call.');
@@ -71,7 +69,6 @@ export default function HomePage() {
       });
 
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) throw new Error(data?.error || `The run could not be started (${res.status}).`);
 
       const id = data.id ?? data.evaluation_id ?? data.run_id;
@@ -85,59 +82,86 @@ export default function HomePage() {
   };
 
   const wordCount = transcript.trim() ? transcript.trim().split(/\s+/).length : 0;
+  const ready = transcript.trim().length >= 200;
 
   return (
-    <main className="min-h-screen bg-white text-stone-900">
-      <div className="max-w-3xl mx-auto px-6 pb-24">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 font-sans selection:bg-indigo-500 selection:text-white">
+      <div className="max-w-4xl mx-auto">
 
-        <header className="pt-20 pb-12">
-          <h1 className="text-3xl font-medium tracking-tight">Call evaluation</h1>
-          <p className="mt-3 text-stone-500 max-w-lg">
-            Paste a transcript and pick which rubric it belongs to. Every run gets its own link you can send on.
+        <header className="mb-8">
+          <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full uppercase tracking-wider">
+            Call intelligence
+          </span>
+          <h1 className="text-3xl font-extrabold tracking-tight mt-3 text-white">Score a call against the rubric</h1>
+          <p className="text-slate-400 text-sm mt-2 max-w-xl">
+            Paste a transcript, pick the rubric it belongs to, and every dimension comes back with the transcript lines its score rests on. Each run gets its own link.
           </p>
         </header>
 
         {/* call type */}
-        <section className="pb-8 border-t border-stone-200 pt-8">
-          <p className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-4">Which call is this</p>
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl mb-6">
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Call type evaluation
+          </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['coaching', 'kickoff'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setCallType(t)}
-                className={`text-left px-4 py-3.5 border rounded transition-colors ${
-                  callType === t ? 'border-stone-900 bg-stone-50' : 'border-stone-200 hover:border-stone-400'
-                }`}
-              >
-                <div className="text-[15px] font-medium">{RUBRIC[t].label}</div>
-                <div className="text-xs text-stone-500 mt-1">
-                  {RUBRIC[t].dimensions.length} dimensions · {RUBRIC[t].dimensions.reduce((s, d) => s + d.points, 0)} points
-                </div>
-              </button>
-            ))}
+            {(['coaching', 'kickoff'] as const).map((t) => {
+              const on = callType === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setCallType(t)}
+                  className={`text-left p-4 rounded-xl border transition-all cursor-pointer ${
+                    on
+                      ? 'bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`font-bold text-sm ${on ? 'text-white' : 'text-slate-300'}`}>
+                      {RUBRIC[t].label}
+                    </span>
+                    <span className={`w-4 h-4 rounded-full border-2 shrink-0 ${on ? 'border-indigo-400 bg-indigo-400' : 'border-slate-700'}`} />
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1.5">
+                    {RUBRIC[t].dimensions.length} dimensions ·{' '}
+                    {RUBRIC[t].dimensions.reduce((s, d) => s + d.points, 0)} points ·{' '}
+                    {RUBRIC[t].caps.length} automatic caps
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </section>
 
-        {/* who */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-5 py-8 border-t border-stone-200">
-          <Field label="Coach" value={coach} onChange={setCoach} />
-          <Field label="Client" value={client} onChange={setClient} />
-          <Field label="Program" value={program} onChange={setProgram} />
-        </section>
+          {/* who */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800/80">
+            <Field label="Coach name" value={coach} onChange={setCoach} placeholder="Coach Marcus Vance" />
+            <Field label="Client name" value={client} onChange={setClient} placeholder="Sarah Jenkins" />
+            <Field label="Program track" value={program} onChange={setProgram} placeholder="Elite Physique 12W" />
+          </div>
+        </div>
 
         {/* transcript */}
-        <section className="py-8 border-t border-stone-200">
-          <div className="flex items-baseline justify-between mb-3">
-            <p className="text-xs uppercase tracking-[0.18em] text-stone-400">Transcript</p>
-            <div className="flex items-center gap-4 text-xs text-stone-400">
-              {wordCount > 0 && <span className="tabular-nums">{wordCount.toLocaleString()} words</span>}
-              <label className="cursor-pointer hover:text-stone-900">
-                Upload a .txt
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl mb-6">
+          <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Transcript
+            </label>
+            <div className="flex items-center gap-4 text-xs">
+              {wordCount > 0 && (
+                <span className={`tabular-nums ${ready ? 'text-slate-500' : 'text-amber-400'}`}>
+                  {wordCount.toLocaleString()} words
+                </span>
+              )}
+              <label className="text-indigo-400 hover:text-indigo-300 cursor-pointer font-medium">
+                Upload .txt
                 <input
                   type="file"
                   accept=".txt,text/plain"
                   className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setTranscript(await f.text()); setError(null); }
+                  }}
                 />
               </label>
             </div>
@@ -146,96 +170,120 @@ export default function HomePage() {
           <textarea
             value={transcript}
             onChange={(e) => { setTranscript(e.target.value); if (error) setError(null); }}
-            placeholder={'[Coach Name]: How has your body been feeling since last time?\n[Client Name]: Honestly, better than I expected.'}
-            rows={14}
-            className="w-full text-sm font-mono leading-relaxed p-4 border border-stone-200 rounded resize-y focus:outline-none focus:border-stone-900 placeholder:text-stone-300"
+            placeholder={'[Coach Marcus]: How has your body been feeling since last time?\n[Sarah]: Honestly, better than I expected.'}
+            rows={12}
+            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 font-mono leading-relaxed resize-y focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
           />
 
-          {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+          {error && (
+            <div className="mt-3 px-4 py-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm text-rose-300">
+              {error}
+            </div>
+          )}
 
-          <div className="mt-6 flex items-center gap-5">
+          <div className="flex items-center gap-4 mt-5 flex-wrap">
             <button
               onClick={submit}
               disabled={submitting}
-              className="bg-stone-900 text-white text-sm px-5 py-2.5 rounded hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Starting the run…' : `Score this ${callType} call`}
             </button>
+
             {transcript && !submitting && (
-              <button onClick={() => setTranscript('')} className="text-sm text-stone-400 hover:text-stone-900">
+              <button onClick={() => setTranscript('')} className="text-sm text-slate-500 hover:text-slate-300 cursor-pointer">
                 Clear
               </button>
             )}
           </div>
 
           {submitting && (
-            <p className="mt-4 text-sm text-stone-500 max-w-lg">
-              Scoring twelve dimensions against the rubric. You can close this tab once the run page opens — it keeps going without you.
+            <p className="text-sm text-slate-400 mt-4 max-w-lg">
+              Scoring twelve dimensions against the rubric. You can close the tab once the run page opens — it keeps going without you.
             </p>
           )}
-        </section>
+        </div>
 
         {/* history */}
-        <section className="pt-10 border-t border-stone-200">
-          <p className="text-xs uppercase tracking-[0.18em] text-stone-400 mb-2">Recent runs</p>
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Recent runs</h2>
 
           {historyLoading ? (
-            <div className="py-8 space-y-3">
-              <div className="h-4 w-2/3 bg-stone-100 animate-pulse rounded" />
-              <div className="h-4 w-1/2 bg-stone-100 animate-pulse rounded" />
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => <div key={i} className="h-16 bg-slate-950/60 rounded-xl animate-pulse" />)}
             </div>
           ) : history.length === 0 ? (
-            <p className="py-8 text-sm text-stone-500">Nothing scored yet. The first run will show up here.</p>
+            <p className="text-sm text-slate-500 py-6">Nothing scored yet. Your first run will show up here.</p>
           ) : (
-            history.map((r) => {
-              const res = typeof r.result === 'string' ? safeParse(r.result) : r.result;
-              const pct = res?.percentage;
-              const band = res?.band;
-              const done = r.status === 'done' || !!res;
-              const failed = r.status === 'failed';
+            <div className="space-y-2">
+              {history.map((r) => {
+                const res = typeof r.result === 'string' ? safeParse(r.result) : r.result;
+                const pct = typeof res?.percentage === 'number' ? res.percentage : null;
+                const band: string = res?.band ?? '';
+                const style = BAND_STYLE[band];
+                const failed = r.status === 'failed';
+                const done = r.status === 'done' || !!res;
 
-              return (
-                <Link
-                  key={r.id}
-                  href={`/evaluations/${r.id}`}
-                  className="flex items-center gap-4 py-4 border-b border-stone-200 group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[15px] text-stone-700 group-hover:text-stone-900 truncate">
-                      {r.client || 'Untitled client'}
-                      {r.coach && <span className="text-stone-400"> · {r.coach}</span>}
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/evaluations/${r.id}`}
+                    className="flex items-center gap-4 p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl hover:border-slate-700 transition-colors group"
+                  >
+                    {/* ring */}
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="20" strokeWidth="4" className="text-slate-800 fill-none" stroke="currentColor" />
+                        {pct !== null && (
+                          <circle
+                            cx="24" cy="24" r="20" strokeWidth="4" fill="none"
+                            stroke={style?.ring ?? '#64748B'}
+                            strokeDasharray={125.6}
+                            strokeDashoffset={125.6 - (125.6 * pct) / 100}
+                            strokeLinecap="round"
+                          />
+                        )}
+                      </svg>
+                      <div className={`absolute text-xs font-bold ${style?.text ?? 'text-slate-500'}`}>
+                        {failed ? '—' : pct !== null ? Math.round(pct) : '·'}
+                      </div>
                     </div>
-                    <div className="text-xs text-stone-400 mt-0.5">
-                      {r.call_type ? RUBRIC[r.call_type]?.label : 'Unknown rubric'} ·{' '}
-                      {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </div>
-                  </div>
 
-                  {failed ? (
-                    <span className="text-xs text-red-700">Failed</span>
-                  ) : !done ? (
-                    <span className="text-xs text-amber-600 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Running
-                    </span>
-                  ) : (
-                    <>
-                      <span className="hidden sm:block text-xs" style={{ color: BAND_HEX[band] ?? '#78716C' }}>{band}</span>
-                      <span
-                        className="tabular-nums text-[15px] w-10 text-right"
-                        style={{ color: BAND_HEX[band] ?? '#57534E' }}
-                      >
-                        {typeof pct === 'number' ? Math.round(pct) : '—'}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-white truncate">
+                        {r.client || 'Untitled client'}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5 truncate">
+                        {r.call_type ? RUBRIC[r.call_type]?.label : 'Unknown rubric'}
+                        {r.coach && ` · ${r.coach}`}
+                        {' · '}
+                        {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+
+                    {failed ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold border bg-rose-500/10 text-rose-400 border-rose-500/20 shrink-0">
+                        Failed
                       </span>
-                    </>
-                  )}
-                  <span className="text-stone-300 text-xs">›</span>
-                </Link>
-              );
-            })
+                    ) : !done ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold border bg-amber-500/10 text-amber-400 border-amber-500/20 shrink-0 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Running
+                      </span>
+                    ) : band ? (
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold border shrink-0 ${style?.chip ?? 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                        {band}
+                      </span>
+                    ) : null}
+
+                    <span className="text-slate-600 group-hover:text-slate-400 transition-colors shrink-0">→</span>
+                  </Link>
+                );
+              })}
+            </div>
           )}
-        </section>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -243,16 +291,19 @@ function safeParse(v: string) {
   try { return JSON.parse(v); } catch { return null; }
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({
+  label, value, onChange, placeholder,
+}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <label className="block">
-      <span className="block text-xs uppercase tracking-[0.14em] text-stone-400 mb-1.5">{label}</span>
+    <div>
+      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
       <input
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={`Add ${label.toLowerCase()}`}
-        className="w-full text-[15px] bg-transparent border-b border-stone-200 pb-1.5 focus:outline-none focus:border-stone-900 placeholder:text-stone-300"
+        placeholder={placeholder}
+        className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
       />
-    </label>
+    </div>
   );
 }
