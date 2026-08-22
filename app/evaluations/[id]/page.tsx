@@ -388,10 +388,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
       </div>
 
-      {/* --- HIDDEN PRINT SHEET FOR PDF EXPORT (Fully styled for html2pdf without blank output) --- */}
+      {/* --- HIDDEN PRINT SHEET FOR PDF EXPORT --- */}
       <div id="print-sheet" aria-hidden style={{ position: 'absolute', left: '-10000px', top: 0, width: '750px', background: '#ffffff', color: '#111827', fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '12px', lineHeight: 1.5, padding: '24px' }}>
-        
-        {/* PDF Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: '16px', borderBottom: '2px solid #111827' }}>
           <div>
             <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#6B7280', fontWeight: 600 }}>{spec?.label} Evaluation Report</div>
@@ -407,7 +405,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
 
-        {/* PDF Summary & One Thing */}
         <div style={{ margin: '16px 0', padding: '12px 16px', background: '#F9FAFB', borderLeft: '3px solid #111827', borderRadius: '4px' }}>
           <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#6B7280', fontWeight: 600, marginBottom: '4px' }}>The High-Impact Pivot</div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{result.the_one_thing.change}</div>
@@ -419,7 +416,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <div style={{ fontSize: '11.5px', color: '#374151', whiteSpace: 'pre-line' }}>{result.brief}</div>
         </div>
 
-        {/* PDF Dimensions Loop */}
         <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#6B7280', fontWeight: 600, marginBottom: '8px', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>Evaluation Dimensions</div>
         {spec?.dimensions.map((d) => {
           const dim = result.dimensions.find((x) => x.id === d.id);
@@ -451,7 +447,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           );
         })}
 
-        {/* PDF Footer */}
         <div style={{ marginTop: '20px', paddingTop: '8px', borderTop: '1px solid #E5E7EB', fontSize: '9.5px', color: '#9CA3AF', display: 'flex', justifyContent: 'space-between' }}>
           <span>Run ID: {id}</span>
           <span>Verified Quotes: {result.evidence_check.verified}/{result.evidence_check.total}</span>
