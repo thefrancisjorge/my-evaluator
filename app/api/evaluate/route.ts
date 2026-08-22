@@ -24,12 +24,13 @@ export async function POST(req: Request) {
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // Ipinapasa natin sa 'report_json' ang resulta para sumunod sa database constraint mo
+    // I-save natin sa parehong 'result' at 'report_json' para siguradong mabasa ng results page anuman ang tawag nito
     const { data, error: dbError } = await supabaseAdmin.from('evaluations').insert([
       {
         call_type: callType,
         transcript: transcript,
-        report_json: markdownOutput, 
+        result: markdownOutput,
+        report_json: markdownOutput,
         status: 'done',
       },
     ]).select('id').single();
