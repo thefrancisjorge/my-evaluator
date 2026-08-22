@@ -1,17 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { RUBRIC, type CallType } from '@/lib/rubrics';
 
-const BAND_STYLE: Record<string, { text: string; ring: string; chip: string }> = {
-  ELITE: { text: 'text-emerald-400', ring: '#34D399', chip: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  STRONG: { text: 'text-sky-400', ring: '#38BDF8', chip: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
-  INCONSISTENT: { text: 'text-amber-400', ring: '#FBBF24', chip: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  'AT RISK': { text: 'text-orange-400', ring: '#FB923C', chip: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
-  FAIL: { text: 'text-rose-400', ring: '#FB7185', chip: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+const BAND_COLOR: Record<string, string> = {
+  ELITE: '#30D158', STRONG: '#0A84FF', INCONSISTENT: '#FFD60A', 'AT RISK': '#FF9F0A', FAIL: '#FF453A',
 };
 
 interface HistoryRow {
@@ -26,6 +22,7 @@ interface HistoryRow {
 
 export default function HomePage() {
   const router = useRouter();
+  const toolRef = useRef<HTMLDivElement>(null);
 
   const [callType, setCallType] = useState<CallType>('coaching');
   const [coach, setCoach] = useState('');
@@ -45,7 +42,7 @@ export default function HomePage() {
         .from('evaluations')
         .select('id, created_at, call_type, client, coach, status, result')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
       if (error) console.error('Error fetching history:', error);
       if (data) setHistory(data as HistoryRow[]);
       setHistoryLoading(false);
@@ -54,113 +51,107 @@ export default function HomePage() {
 
   const submit = async () => {
     if (transcript.trim().length < 200) {
-      setError('That transcript looks too short to score. Paste the whole call.');
+      setError('Transcript is too short. Please provide a complete session transcript.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       const res = await fetch('/api/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcript, callType, call_type: callType, coach, client, program }),
       });
-
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || `The run could not be started (${res.status}).`);
-
+      if (!res.ok) throw new Error(data?.error || `Evaluation failed to start (${res.status}).`);
       const id = data.id ?? data.evaluation_id ?? data.run_id;
-      if (!id) throw new Error('The run started but no id came back, so there is nothing to open.');
-
+      if (!id) throw new Error('Evaluation started, but no ID was returned.');
       router.push(`/evaluations/${id}`);
     } catch (e: any) {
-      setError(e.message || 'Something went wrong starting the run.');
+      setError(e.message || 'An unexpected error occurred.');
       setSubmitting(false);
     }
   };
 
   const wordCount = transcript.trim() ? transcript.trim().split(/\s+/).length : 0;
-  const ready = transcript.trim().length >= 200;
+  const scrollToTool = () => toolRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 font-sans selection:bg-indigo-500 selection:text-white">
-      <div className="max-w-4xl mx-auto">
+    <main className="app-container">
+      <style>{professionalCSS}</style>
 
-        <header className="mb-8">
-          <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full uppercase tracking-wider">
-            Call intelligence
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight mt-3 text-white">Score a call against the rubric</h1>
-          <p className="text-slate-400 text-sm mt-2 max-w-xl">
-            Paste a transcript, pick the rubric it belongs to, and every dimension comes back with the transcript lines its score rests on. Each run gets its own link.
+      {/* Top Header / Navigation */}
+      <header className="app-header">
+        <div className="shell header-content">
+          <div className="logo-group">
+            <div className="logo-pulse" />
+            <span className="logo-text">CallEval<span className="logo-badge">Pro</span></span>
+          </div>
+          <button onClick={scrollToTool} className="btn-header-action">New Evaluation</button>
+        </div>
+      </header>
+
+      {/* Hero Intro */}
+      <section className="hero-section">
+        <div className="shell hero-inner">
+          <span className="eyebrow-tag">Precision Call Auditing</span>
+          <h1 className="hero-title">
+            Objective coaching evaluations,<br />
+            <span className="hero-subtitle-dim">backed by verbatim proof.</span>
+          </h1>
+          <p className="hero-desc">
+            Analyze recorded transcripts across 12 strict dimensions. Enforce automated caps, 
+            tier buckets, and evidence-based grading instantly.
           </p>
-        </header>
+        </div>
+      </section>
 
-        {/* call type */}
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl mb-6">
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Call type evaluation
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Main Evaluator Tool */}
+      <section className="shell tool-wrapper" ref={toolRef}>
+        <div className="eval-card">
+          <div className="card-section-title">
+            <h2>Evaluation Parameters</h2>
+            <p>Select rubric configuration and enter session metadata.</p>
+          </div>
+
+          <div className="rubric-selector">
             {(['coaching', 'kickoff'] as const).map((t) => {
-              const on = callType === t;
+              const active = callType === t;
               return (
-                <button
-                  key={t}
-                  onClick={() => setCallType(t)}
-                  className={`text-left p-4 rounded-xl border transition-all cursor-pointer ${
-                    on
-                      ? 'bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-bold text-sm ${on ? 'text-white' : 'text-slate-300'}`}>
-                      {RUBRIC[t].label}
+                <button key={t} onClick={() => setCallType(t)} className={`rubric-option ${active ? 'active' : ''}`}>
+                  <div className="radio-indicator" />
+                  <div className="rubric-details">
+                    <span className="rubric-name">{RUBRIC[t].label}</span>
+                    <span className="rubric-specs">
+                      {RUBRIC[t].dimensions.length} dimensions · {RUBRIC[t].dimensions.reduce((s, d) => s + d.points, 0)} pts
                     </span>
-                    <span className={`w-4 h-4 rounded-full border-2 shrink-0 ${on ? 'border-indigo-400 bg-indigo-400' : 'border-slate-700'}`} />
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1.5">
-                    {RUBRIC[t].dimensions.length} dimensions ·{' '}
-                    {RUBRIC[t].dimensions.reduce((s, d) => s + d.points, 0)} points ·{' '}
-                    {RUBRIC[t].caps.length} automatic caps
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* who */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800/80">
-            <Field label="Coach name" value={coach} onChange={setCoach} placeholder="Coach Marcus Vance" />
-            <Field label="Client name" value={client} onChange={setClient} placeholder="Sarah Jenkins" />
-            <Field label="Program track" value={program} onChange={setProgram} placeholder="Elite Physique 12W" />
+          <div className="metadata-grid">
+            <InputField label="Coach Name" value={coach} onChange={setCoach} placeholder="e.g. Marcus Vance" />
+            <InputField label="Client Name" value={client} onChange={setClient} placeholder="e.g. Sarah Jenkins" />
+            <InputField label="Program Track" value={program} onChange={setProgram} placeholder="e.g. Elite Physique 12W" />
           </div>
-        </div>
 
-        {/* transcript */}
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl mb-6">
-          <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Transcript
-            </label>
-            <div className="flex items-center gap-4 text-xs">
-              {wordCount > 0 && (
-                <span className={`tabular-nums ${ready ? 'text-slate-500' : 'text-amber-400'}`}>
-                  {wordCount.toLocaleString()} words
-                </span>
-              )}
-              <label className="text-indigo-400 hover:text-indigo-300 cursor-pointer font-medium">
-                Upload .txt
+          <div className="transcript-header">
+            <label className="input-label">Session Transcript</label>
+            <div className="transcript-tools">
+              {wordCount > 0 && <span className={`word-count ${wordCount < 40 ? 'warning' : ''}`}>{wordCount.toLocaleString()} words</span>}
+              <label className="file-upload-btn">
+                Import .txt
                 <input
                   type="file"
                   accept=".txt,text/plain"
-                  className="hidden"
                   onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (f) { setTranscript(await f.text()); setError(null); }
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setTranscript(await file.text());
+                      setError(null);
+                    }
                   }}
                 />
               </label>
@@ -170,140 +161,589 @@ export default function HomePage() {
           <textarea
             value={transcript}
             onChange={(e) => { setTranscript(e.target.value); if (error) setError(null); }}
-            placeholder={'[Coach Marcus]: How has your body been feeling since last time?\n[Sarah]: Honestly, better than I expected.'}
+            placeholder={'[Coach]: How has your performance felt this week?\n[Client]: Much better, especially with consistency.'}
             rows={12}
-            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 font-mono leading-relaxed resize-y focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
+            className="transcript-textarea"
           />
 
-          {error && (
-            <div className="mt-3 px-4 py-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm text-rose-300">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-banner">{error}</div>}
 
-          <div className="flex items-center gap-4 mt-5 flex-wrap">
-            <button
-              onClick={submit}
-              disabled={submitting}
-              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Starting the run…' : `Score this ${callType} call`}
+          <div className="action-footer">
+            <button onClick={submit} disabled={submitting} className="btn-primary-eval">
+              {submitting ? 'Analyzing Transcript...' : `Run ${callType} Evaluation`}
             </button>
-
             {transcript && !submitting && (
-              <button onClick={() => setTranscript('')} className="text-sm text-slate-500 hover:text-slate-300 cursor-pointer">
-                Clear
-              </button>
+              <button onClick={() => setTranscript('')} className="btn-text-clear">Clear Input</button>
             )}
           </div>
+        </div>
+      </section>
 
-          {submitting && (
-            <p className="text-sm text-slate-400 mt-4 max-w-lg">
-              Scoring twelve dimensions against the rubric. You can close the tab once the run page opens — it keeps going without you.
-            </p>
-          )}
+      {/* History Feed */}
+      <section className="shell history-section">
+        <div className="section-header-row">
+          <h2>Recent Evaluations</h2>
+          <p>Access audit trails and detailed dimension breakdowns.</p>
         </div>
 
-        {/* history */}
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Recent runs</h2>
+        {historyLoading ? (
+          <div className="loading-skeletons">
+            {[1, 2, 3].map((i) => <div key={i} className="skeleton-row" />)}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="empty-state">No evaluations recorded yet. Run your first assessment above.</div>
+        ) : (
+          <div className="history-list">
+            {history.map((row) => {
+              const res = typeof row.result === 'string' ? safeJsonParse(row.result) : row.result;
+              const pct = typeof res?.percentage === 'number' ? res.percentage : null;
+              const band: string = res?.band ?? '';
+              const color = BAND_COLOR[band] ?? '#8E8E93';
+              const isFailed = row.status === 'failed';
+              const isDone = row.status === 'done' || !!res;
 
-          {historyLoading ? (
-            <div className="space-y-3">
-              {[0, 1, 2].map((i) => <div key={i} className="h-16 bg-slate-950/60 rounded-xl animate-pulse" />)}
-            </div>
-          ) : history.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6">Nothing scored yet. Your first run will show up here.</p>
-          ) : (
-            <div className="space-y-2">
-              {history.map((r) => {
-                const res = typeof r.result === 'string' ? safeParse(r.result) : r.result;
-                const pct = typeof res?.percentage === 'number' ? res.percentage : null;
-                const band: string = res?.band ?? '';
-                const style = BAND_STYLE[band];
-                const failed = r.status === 'failed';
-                const done = r.status === 'done' || !!res;
+              return (
+                <Link key={row.id} href={`/evaluations/${row.id}`} className="history-item">
+                  <div className="score-ring-wrapper">
+                    <svg viewBox="0 0 36 36" className="ring-svg">
+                      <path className="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      {pct !== null && (
+                        <path
+                          className="ring-fill"
+                          stroke={color}
+                          strokeDasharray={`${pct}, 100`}
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      )}
+                    </svg>
+                    <span className="ring-text" style={{ color: pct !== null ? color : '#8E8E93' }}>
+                      {isFailed ? '!' : pct !== null ? Math.round(pct) : '·'}
+                    </span>
+                  </div>
 
-                return (
-                  <Link
-                    key={r.id}
-                    href={`/evaluations/${r.id}`}
-                    className="flex items-center gap-4 p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl hover:border-slate-700 transition-colors group"
-                  >
-                    {/* ring */}
-                    <div className="relative flex items-center justify-center shrink-0">
-                      <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="20" strokeWidth="4" className="text-slate-800 fill-none" stroke="currentColor" />
-                        {pct !== null && (
-                          <circle
-                            cx="24" cy="24" r="20" strokeWidth="4" fill="none"
-                            stroke={style?.ring ?? '#64748B'}
-                            strokeDasharray={125.6}
-                            strokeDashoffset={125.6 - (125.6 * pct) / 100}
-                            strokeLinecap="round"
-                          />
-                        )}
-                      </svg>
-                      <div className={`absolute text-xs font-bold ${style?.text ?? 'text-slate-500'}`}>
-                        {failed ? '—' : pct !== null ? Math.round(pct) : '·'}
-                      </div>
-                    </div>
+                  <div className="history-info">
+                    <span className="history-client-name">{row.client || 'Untitled Evaluation'}</span>
+                    <span className="history-meta">
+                      {row.call_type ? RUBRIC[row.call_type]?.label : 'Standard Audit'}
+                      {row.coach && ` · ${row.coach}`}
+                      {' · '}
+                      {new Date(row.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white truncate">
-                        {r.client || 'Untitled client'}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5 truncate">
-                        {r.call_type ? RUBRIC[r.call_type]?.label : 'Unknown rubric'}
-                        {r.coach && ` · ${r.coach}`}
-                        {' · '}
-                        {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
+                  {isFailed ? (
+                    <span className="status-badge failed">Failed</span>
+                  ) : !isDone ? (
+                    <span className="status-badge running"><span className="pulse-dot" />Running</span>
+                  ) : band ? (
+                    <span className="status-badge" style={{ color, borderColor: `${color}40`, background: `${color}10` }}>
+                      {band}
+                    </span>
+                  ) : null}
 
-                    {failed ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold border bg-rose-500/10 text-rose-400 border-rose-500/20 shrink-0">
-                        Failed
-                      </span>
-                    ) : !done ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold border bg-amber-500/10 text-amber-400 border-amber-500/20 shrink-0 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Running
-                      </span>
-                    ) : band ? (
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border shrink-0 ${style?.chip ?? 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                        {band}
-                      </span>
-                    ) : null}
+                  <span className="chevron-icon">→</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
-                    <span className="text-slate-600 group-hover:text-slate-400 transition-colors shrink-0">→</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      <footer className="shell app-footer">
+        <p>Enterprise Coaching Audit Platform · Secure Verbatim Tracking</p>
+      </footer>
+    </main>
   );
 }
 
-function safeParse(v: string) {
+function safeJsonParse(v: string) {
   try { return JSON.parse(v); } catch { return null; }
 }
 
-function Field({
-  label, value, onChange, placeholder,
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function InputField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
-      />
+    <div className="input-group">
+      <label>{label}</label>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </div>
   );
 }
+
+const professionalCSS = `
+.app-container {
+  background-color: #09090b;
+  color: #f4f4f5;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 80px;
+}
+
+.shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.app-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-pulse {
+  width: 8px;
+  height: 8px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+}
+.logo-text {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+.logo-badge {
+  font-size: 10px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  font-weight: 500;
+}
+.btn-header-action {
+  background: #ffffff;
+  color: #09090b;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-header-action:hover {
+  opacity: 0.9;
+}
+
+.hero-section {
+  padding: 60px 0 40px;
+  text-align: left;
+}
+.eyebrow-tag {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #3b82f6;
+  margin-bottom: 12px;
+  display: block;
+}
+.hero-title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
+  color: #ffffff;
+}
+.hero-subtitle-dim {
+  color: #71717a;
+}
+.hero-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #a1a1aa;
+  max-width: 620px;
+  margin: 0;
+}
+
+.tool-wrapper {
+  margin-bottom: 60px;
+}
+.eval-card {
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.card-section-title h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #ffffff;
+}
+.card-section-title p {
+  font-size: 13px;
+  color: #71717a;
+  margin: 0 0 20px 0;
+}
+
+.rubric-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.rubric-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.rubric-option:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.rubric-option.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+}
+.radio-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #52525b;
+  margin-top: 2px;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.rubric-option.active .radio-indicator {
+  border-color: #3b82f6;
+  box-shadow: inset 0 0 0 3px #3b82f6;
+}
+.rubric-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+.rubric-specs {
+  display: block;
+  font-size: 12px;
+  color: #71717a;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
+  margin-bottom: 6px;
+}
+.input-group input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #f4f4f5;
+  font-size: 13.5px;
+  transition: border-color 0.2s;
+}
+.input-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+.input-group input::placeholder {
+  color: #3f3f46;
+}
+
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
+}
+.transcript-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #71717a;
+}
+.word-count.warning {
+  color: #f59e0b;
+}
+.file-upload-btn {
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+}
+.file-upload-btn:hover {
+  text-decoration: underline;
+}
+.file-upload-btn input {
+  display: none;
+}
+.transcript-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  color: #f4f4f5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+.transcript-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+.transcript-textarea::placeholder {
+  color: #3f3f46;
+}
+
+.error-banner {
+  margin-top: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.action-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.btn-primary-eval {
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary-eval:hover {
+  background: #2563eb;
+}
+.btn-primary-eval:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-text-clear {
+  background: transparent;
+  color: #71717a;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-text-clear:hover {
+  color: #f4f4f5;
+}
+
+.history-section {
+  margin-top: 40px;
+}
+.section-header-row {
+  margin-bottom: 16px;
+}
+.section-header-row h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+.section-header-row p {
+  font-size: 13px;
+  color: #71717a;
+  margin: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+.history-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #18181b;
+}
+
+.score-ring-wrapper {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ring-svg {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  transform: rotate(-90deg);
+}
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 3;
+}
+.ring-fill {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.ring-text {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+.history-client-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-meta {
+  display: block;
+  font-size: 12px;
+  color: #71717a;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+.status-badge.failed {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+.status-badge.running {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pulse-dot {
+  width: 5px;
+  height: 5px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  animation: pulse-kf 1.5s infinite;
+}
+@keyframes pulse-kf {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.chevron-icon {
+  color: #52525b;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+.history-item:hover .chevron-icon {
+  transform: translateX(3px);
+  color: #a1a1aa;
+}
+
+.loading-skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-row {
+  height: 60px;
+  background: #121215;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.empty-state {
+  font-size: 13px;
+  color: #71717a;
+  padding: 24px 0;
+}
+
+.app-footer {
+  margin-top: 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: #71717a;
+}
+
+@media(max-width: 768px) {
+  .metadata-grid, .rubric-selector {
+    grid-template-columns: 1fr;
+  }
+}
+`;
