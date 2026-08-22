@@ -33,7 +33,7 @@ export default function HomePage() {
         throw new Error(data.error || 'Failed to evaluate call');
       }
 
-      // Kuhanin ang rawOutput string o fallback sa stringified version
+      // Kuhanin nang direkta ang rawOutput string mula sa JSON response
       if (typeof data === 'string') {
         setResult(data);
       } else if (data && typeof data.rawOutput === 'string') {
