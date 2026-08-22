@@ -1,70 +1,100 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from "../../../supabase";
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
-export default function ReportPage() {
-  const { id } = useParams();
-  const [data, setData] = useState<any>(null);
+export default function HomePage() {
+  const [callType, setCallType] = useState('Inbound Sales');
+  const [transcript, setTranscript] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    async function load() {
-      const { data: record } = await supabase
-        .from('evaluations')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (record) setData(record);
+  const handleEvaluate = async () => {
+    if (!transcript.trim()) {
+      setError('Please provide a call transcript.');
+      return;
     }
-    if (id) load();
-  }, [id]);
 
-  const handleDownloadPDF = async () => {
-    const html2pdf = (await import('html2pdf.js')).default;
-    const element = document.getElementById('pdf-report');
-    html2pdf().from(element).save(`Bievermind-Report-${id}.pdf`);
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const response = await fetch('/api/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callType, transcript }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to evaluate call');
+      }
+
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!data) return <div className="p-8 text-center">Loading Report...</div>;
-
-  const r = data.report_json;
-
   return (
-    <main className="max-w-4xl mx-auto p-8 font-sans">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Evaluation Report</h1>
-        <button
-          onClick={handleDownloadPDF}
-          className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700"
-        >
-          Download PDF
-        </button>
+    <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
+      <h1>Call Evaluator AI</h1>
+      <p style={{ color: '#666' }}>Paste a call transcript below to evaluate using Gemini AI.</p>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Type</label>
+        <input
+          type="text"
+          value={callType}
+          onChange={(e) => setCallType(e.target.value)}
+          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
       </div>
 
-      <div id="pdf-report" className="space-y-6 bg-white p-6 border rounded shadow-sm">
-        <div className="border-b pb-4">
-          <p className="text-sm text-gray-500">Call Type: {data.call_type}</p>
-          <div className="text-3xl font-extrabold mt-1">
-            Grade Band: <span className="text-blue-600">{r.gradeBand || 'Inconsistent'}</span> ({r.finalScore || 0}/100)
-          </div>
-        </div>
-
-        <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
-          <h3 className="font-bold text-amber-900">The One Thing</h3>
-          <p className="text-amber-800">{r.theOneThing}</p>
-        </div>
-
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-          <h3 className="font-bold text-blue-900">The Brief</h3>
-          <p className="text-blue-800">{r.theBrief}</p>
-        </div>
-
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <h3 className="font-bold text-red-900">Red Flags</h3>
-          <p className="text-red-800">{r.redFlags}</p>
-        </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Transcript</label>
+        <textarea
+          rows={10}
+          value={transcript}
+          onChange={(e) => setTranscript(e.target.value)}
+          placeholder="Agent: Hello...\nCustomer: Hi..."
+          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
       </div>
+
+      <button
+        onClick={handleEvaluate}
+        disabled={loading}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          backgroundColor: loading ? '#ccc' : '#0070f3',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {loading ? 'Evaluating Call...' : 'Evaluate Call'}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#ffe6e6', color: '#d8000c', borderRadius: '4px' }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {result && result.rawOutput && (
+        <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <ReactMarkdown>{result.rawOutput}</ReactMarkdown>
+        </div>
+      )}
     </main>
   );
 }
