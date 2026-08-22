@@ -2,8 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from 'next/server';
 import { evaluateCall } from '@/lib/llm';
-import { supabase } from '@/lib/supabase';
-import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+// Gumamit ng Supabase Admin client gamit ang service role key para i-bypass ang RLS restrictions sa pag-save
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
@@ -16,41 +20,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. I-run ang AI evaluation
     const evaluationResult = await evaluateCall(transcript, callType);
     const markdownOutput = typeof evaluationResult === 'string' 
       ? evaluationResult 
       : JSON.stringify(evaluationResult);
 
-    // Gumawa muna ng random UUID kung sakaling hindi pumasok sa database
-    let insertedId = crypto.randomUUID();
-
-    // 2. Subukang i-save sa Supabase kung gumagana
-    try {
-      const { data, error: dbError } = await supabase.from('evaluations').insert([
-        {
-          id: insertedId, // I-pilit natin gamitin ang UUID na ito
-          call_type: callType,
-          transcript: transcript,
-          coach: coach || null,
-          client: client || null,
-          program: program || null,
-          result: markdownOutput,
-          status: 'done',
-        },
-      ]).select('id').single();
-      
-      if (dbError) {
-        console.error('Supabase insert warning (falling back to generated ID):', dbError);
-      } else if (data?.id) {
-        insertedId = data.id;
-      }
-    } catch (dbError) {
-      console.error('Supabase connection exception:', dbError);
+    // I-save diretso sa Supabase gamit ang admin client
+    const { data, error: dbError } = await supabaseAdmin.from('evaluations').insert([
+      {
+        call_type: callType,
+        transcript: transcript,
+        coach: coach || null,
+        client: client || null,
+        program: program || null,
+        result: markdownOutput,
+        status: 'done',
+      },
+    ]).select('id').single();
+    
+    if (dbError) {
+      console.error('Supabase insert error:', dbError);
+      return NextResponse.json({ error: `Database save failed: ${dbError.message}` }, { status: 500 });
     }
 
-    // Siguraduhing may maibabalik na ID anumang mangyari
-    return NextResponse.json({ id: insertedId, report: markdownOutput });
+    if (!data?.id) {
+      return NextResponse.json({ error: 'Evaluation saved, but no ID was returned from database.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ id: data.id, report: markdownOutput });
     
   } catch (error: any) {
     console.error('Evaluation Route Error:', error);
