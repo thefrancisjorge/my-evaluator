@@ -22,5 +22,6 @@ export async function evaluateCall(transcript: string, callType: string) {
     contents: prompt,
   });
 
-  return response.text;
+  // Direkta nating ibalik ang text string lang!
+  return response.text || '';
 }
