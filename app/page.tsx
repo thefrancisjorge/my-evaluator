@@ -1,100 +1,112 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 export default function HomePage() {
-  const [transcript, setTranscript] = useState("");
-  const [callType, setCallType] = useState("Inbound Sales");
+  const [callType, setCallType] = useState('Inbound Sales');
+  const [transcript, setTranscript] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<string>('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEvaluate = async () => {
+    if (!transcript.trim()) {
+      setError('Please provide a call transcript.');
+      return;
+    }
+
     setLoading(true);
-    setError(null);
-    setResult(null);
+    setError('');
+    setResult('');
 
     try {
-      const res = await fetch("/api/evaluate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, callType }),
+      const response = await fetch('/api/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callType, transcript }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to evaluate call");
+      let data = await response.json();
 
-      setResult(data);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to evaluate call');
+      }
+
+      // Kung exact JSON string ang natanggap mula sa API, i-parse muna ito
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          // Manatiling string kung hindi parsable bilang JSON
+        }
+      }
+
+      // Kuhanin ang malinis na rawOutput text string
+      const cleanMarkdown = typeof data === 'object' && data.rawOutput 
+        ? data.rawOutput 
+        : (typeof data === 'string' ? data : JSON.stringify(data));
+
+      setResult(cleanMarkdown);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem", fontFamily: "sans-serif" }}>
+    <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
       <h1>Call Evaluator AI</h1>
-      <p style={{ color: "#666" }}>Paste a call transcript below to evaluate using Gemini AI.</p>
+      <p style={{ color: '#666' }}>Paste a call transcript below to evaluate using Gemini AI.</p>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Call Type
-          </label>
-          <input
-            type="text"
-            value={callType}
-            onChange={(e) => setCallType(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem" }}
-            required
-          />
-        </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Type</label>
+        <input
+          type="text"
+          value={callType}
+          onChange={(e) => setCallType(e.target.value)}
+          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
+      </div>
 
-        <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Call Transcript
-          </label>
-          <textarea
-            rows={10}
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Agent: Hello, thanks for calling...\nCustomer: Hi, I have a question about..."
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", fontFamily: "monospace" }}
-            required
-          />
-        </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Call Transcript</label>
+        <textarea
+          rows={10}
+          value={transcript}
+          onChange={(e) => setTranscript(e.target.value)}
+          placeholder="Agent: Hello...\nCustomer: Hi..."
+          style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
+      </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: loading ? "#ccc" : "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Evaluating..." : "Evaluate Call"}
-        </button>
-      </form>
+      <button
+        onClick={handleEvaluate}
+        disabled={loading}
+        style={{
+          width: '100%',
+          padding: '0.75rem',
+          backgroundColor: loading ? '#ccc' : '#0070f3',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {loading ? 'Evaluating Call...' : 'Evaluate Call'}
+      </button>
 
       {error && (
-        <div style={{ marginTop: "2rem", color: "red", padding: "1rem", border: "1px solid red", borderRadius: "5px" }}>
+        <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#ffe6e6', color: '#d8000c', borderRadius: '4px' }}>
           <strong>Error:</strong> {error}
         </div>
       )}
 
       {result && (
-        <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#f5f5f5", borderRadius: "5px" }}>
-          <h2>Evaluation Result</h2>
-          <pre style={{ overflowX: "auto", whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
+        <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <ReactMarkdown>{result}</ReactMarkdown>
         </div>
       )}
     </main>
